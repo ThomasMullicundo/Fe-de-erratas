@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <title>Mesa de autores — Fe de ratas</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body class="admin-body">
+    <main class="admin-shell">
+      <header class="admin-head">
+        <a class="admin-brand" href="/">FE DE RATAS</a>
+        <p>Mesa de autores<br>Solo material propio</p>
+      </header>
+
+      <section class="admin-login" data-login-view>
+        <div class="login-card">
+          <span class="stamp">Acceso<br>infectado</span>
+          <p class="kicker">Entrada a la redacción</p>
+          <h1>Mostrá tus papeles.</h1>
+          <p>Este acceso es solo para autores invitados. Desde acá podés escribir y enviar tus notas; el resto del sitio queda fuera de alcance.</p>
+          <form class="admin-form" data-login-form>
+            <label for="author-email">Correo</label>
+            <input id="author-email" name="email" type="email" autocomplete="username" required>
+            <label for="author-password">Contraseña</label>
+            <input id="author-password" name="password" type="password" autocomplete="current-password" required>
+            <button type="submit">Entrar a la madriguera</button>
+            <p class="form-message" data-login-message role="alert"></p>
+          </form>
+        </div>
+      </section>
+
+      <section class="admin-workspace" data-workspace hidden>
+        <aside class="notes-panel">
+          <div class="notes-panel-head"><h1>Mis notas</h1><button class="admin-button new-note" type="button" data-new-note aria-label="Crear una nota">+</button></div>
+          <p class="author-chip" data-author-email></p>
+          <div class="notes-list" data-notes-list></div>
+          <button class="admin-button logout-button" type="button" data-logout>Salir</button>
+        </aside>
+
+        <section class="editor-panel">
+          <div class="editor-empty" data-editor-empty>
+            <p class="kicker">Mesa de trabajo</p>
+            <h2>Una hoja en blanco también muerde.</h2>
+            <p>Creá una nota o abrí uno de tus borradores. Nadie desde esta pantalla puede tocar la portada, las secciones ni los textos de otros autores.</p>
+            <button class="admin-button" type="button" data-new-note>Crear mi primera nota</button>
+          </div>
+
+          <form class="editor-form" data-editor-form hidden>
+            <div class="editor-topline"><span data-note-status>Borrador</span><span data-word-count>0 palabras</span></div>
+            <div class="locked-note" data-locked-message hidden>Esta nota ya fue enviada a edición y quedó cerrada para cambios.</div>
+            <label for="note-title">Título</label>
+            <input id="note-title" name="title" maxlength="180" placeholder="Un título que deje marca" required>
+            <div class="editor-grid">
+              <div><label for="note-excerpt">Bajada</label><textarea id="note-excerpt" name="excerpt" rows="4" maxlength="500" placeholder="Una entrada breve para la nota"></textarea></div>
+              <div><label for="note-category">Tipo de material</label><select id="note-category" name="category"><option value="relato">Relato</option><option value="cronica">Crónica</option><option value="poesia">Poesía</option><option value="opinion">Opinión</option><option value="historieta">Historieta</option><option value="fotografia">Fotografía</option></select></div>
+            </div>
+            <label for="note-content">Texto</label>
+            <textarea id="note-content" name="content" placeholder="Escribí acá. El borrador queda guardado en tu cuenta." required></textarea>
+            <div class="editor-actions">
+              <button class="admin-button" type="submit" data-save>Guardar borrador</button>
+              <button class="admin-button submit-note" type="button" data-submit-note>Enviar a edición</button>
+              <span class="editor-state" data-editor-state aria-live="polite"></span>
+            </div>
+          </form>
+        </section>
+      </section>
+    </main>
+    <script src="/supabase-config.js"></script>
+    <script src="/admin.js"></script>
+  </body>
+</html>
