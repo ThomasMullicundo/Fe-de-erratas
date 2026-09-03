@@ -1,8 +1,12 @@
-import { cp, mkdir } from "node:fs/promises";
+import { cp, mkdir, readdir } from "node:fs/promises";
 
 await mkdir("dist", { recursive: true });
-await cp("index.html", "dist/index.html");
 await cp("styles.css", "dist/styles.css");
+await cp("script.js", "dist/script.js");
 await cp("public", "dist", { recursive: true });
+
+for (const file of await readdir(".")) {
+  if (file.endsWith(".html")) await cp(file, `dist/${file}`);
+}
 
 console.log("Fe de ratas lista en dist/");

@@ -11,52 +11,64 @@
     <main>
       <header class="site-head" id="arriba">
         <div class="eyebrow"><span>Buenos Aires · República de las sobras</span><span>Edición digital · 2026</span></div>
-        <a class="brand" href="#arriba" aria-label="Fe de ratas, inicio">FE DE RATAS</a>
+        <a class="brand" href="/" aria-label="Fe de ratas, inicio">FE DE RATAS</a>
         <div class="tagline">Escoria que vive a lo grande</div>
-        <nav aria-label="Secciones principales"><a href="#lecturas">Lecturas</a><a href="#madriguera">La madriguera</a><a href="#numero">Revista</a><a href="#colabora">Dejá tu texto</a></nav>
+        <nav aria-label="Secciones principales"><a href="/relatos">Relatos</a><a href="/cronicas">Crónicas</a><a href="/poesia">Poesía</a><a href="/manifiesto">La madriguera</a><a href="/revista">Revista</a><a href="/colabora">Dejá tu texto</a></nav>
       </header>
       <div class="crawl" aria-hidden="true"><div>RELATOS · CRÓNICAS · POESÍA · HUMOR · FOTOS · DIBUJOS · SIN BUENA CONDUCTA · RELATOS · CRÓNICAS · POESÍA · HUMOR · FOTOS · DIBUJOS · SIN BUENA CONDUCTA · </div></div>
-      <section class="lead" aria-labelledby="nota-principal">
-        <div class="lead-copy">
-          <p class="kicker">Editorial de apertura</p>
-          <h1 id="nota-principal">Desde abajo todo parece más caro</h1>
-          <p class="dek">Nacimos entre estaciones de subte y salidas a la superficie a buscar comida. Ya somos parte del ecosistema porteño. ¿O nunca viste las ratas en Palermo Chico?</p>
-          <a class="read-link" href="#madriguera">Entrá a la madriguera <span>→</span></a>
+      <section class="news-carousel" aria-label="Novedades" data-carousel>
+        <div class="carousel-track">
+          <article class="carousel-slide is-active" data-slide>
+            <div class="carousel-copy"><p class="kicker">Editorial de apertura · 01</p><h1>Desde abajo todo parece más caro</h1><p class="dek">Nacimos entre estaciones de subte y salidas a la superficie a buscar comida. Ya somos parte del ecosistema porteño.</p><a class="read-link" href="/manifiesto">Entrá a la madriguera <span>→</span></a></div>
+            <div class="cover-wrap"><div class="burst">Nº 1<br><b>LA NOCHE</b></div><img src="/portada-fe-de-ratas.webp" alt="Portada de Fe de ratas"><p>Edición impresa · 96 páginas · Próximamente</p></div>
+            <aside class="side-note"><span class="stamp">Material<br>infectado</span><p>Literatura, periodismo y gráfica popular desde el margen.</p></aside>
+          </article>
+          <article class="carousel-slide" data-slide>
+            <div class="carousel-copy"><p class="kicker">Relato nuevo · 02</p><h1>Maté a mi casero y ahora me quiere cobrar el mes</h1><p class="dek">Una deuda, dos cuchillos y un departamento que nunca fue de nadie.</p><a class="read-link" href="/relatos">Leer el relato <span>→</span></a></div>
+            <div class="carousel-poster poster-red" aria-hidden="true"><span>DEUDA</span><b>NINGÚN<br>MUERTO<br>PAGA<br>ALQUILER</b><small>Ficción de Mara Candela</small></div>
+            <aside class="side-note"><span class="stamp">Recién<br>publicado</span><p>Policial doméstico para inquilinos sin garantías.</p></aside>
+          </article>
+          <article class="carousel-slide" data-slide>
+            <div class="carousel-copy"><p class="kicker">Crónica · 03</p><h1>El hombre que durmió seis meses en el mismo bar</h1><p class="dek">En Boedo hay una mesa que todavía conserva la forma de su espalda.</p><a class="read-link" href="/cronicas">Leer la crónica <span>→</span></a></div>
+            <div class="carousel-poster poster-blue" aria-hidden="true"><span>BAJO FONDO</span><b>ÚLTIMA<br>COPA<br>NUNCA</b><small>Crónica de Simón Vallejos</small></div>
+            <aside class="side-note"><span class="stamp">Toda la<br>noche</span><p>Personajes y lugares que la ciudad prefiere no mirar.</p></aside>
+          </article>
         </div>
-        <div class="cover-wrap" id="numero">
-          <div class="burst">Nº 1<br><b>LA NOCHE</b></div>
-          <img src="/portada-fe-de-ratas.webp" alt="Portada de Fe de ratas, con una rata mirando hacia la calle desde una alcantarilla">
-          <p>Edición impresa · 96 páginas · Próximamente</p>
+        <div class="carousel-controls">
+          <button type="button" data-prev aria-label="Novedad anterior">←</button>
+          <div class="carousel-dots" aria-label="Elegir novedad"><button class="is-active" data-dot="0" aria-label="Novedad 1"></button><button data-dot="1" aria-label="Novedad 2"></button><button data-dot="2" aria-label="Novedad 3"></button></div>
+          <p><span data-current>01</span> / 03</p>
+          <button type="button" data-next aria-label="Novedad siguiente">→</button>
         </div>
-        <aside class="side-note"><span class="stamp">Material<br>infectado</span><p>Literatura, periodismo y gráfica popular desde el margen. Sin romantizar la miseria. Sin hacerle asco al exceso.</p></aside>
       </section>
       <section class="latest" id="lecturas" aria-labelledby="ultimas">
         <div class="section-head"><p>Últimos restos encontrados</p><h2 id="ultimas">Lecturas recientes</h2></div>
         <div class="story-grid">
-          <article class="story story-red"><div class="story-meta"><span>Relato</span><span>01</span></div><h3>Maté a mi casero y ahora me quiere cobrar el mes</h3><p>Una deuda, dos cuchillos y un departamento que nunca fue de nadie.</p><footer>Por Mara Candela <span>Leer →</span></footer></article>
-          <article class="story story-ink"><div class="story-meta"><span>Crónica</span><span>02</span></div><h3>El hombre que durmió seis meses en el mismo bar</h3><p>En Boedo hay una mesa que todavía conserva la forma de su espalda.</p><footer>Por Simón Vallejos <span>Leer →</span></footer></article>
-          <article class="story story-blue"><div class="story-meta"><span>Poesía</span><span>03</span></div><h3>Poemas para leer mientras esperás el 152</h3><p>Cinco paradas, tres promesas y una ciudad que siempre llega tarde.</p><footer>Por Malena Ortiz <span>Leer →</span></footer></article>
+          <a class="story story-red" href="/relatos"><div class="story-meta"><span>Relato</span><span>01</span></div><h3>Maté a mi casero y ahora me quiere cobrar el mes</h3><p>Una deuda, dos cuchillos y un departamento que nunca fue de nadie.</p><footer>Por Mara Candela <span>Leer →</span></footer></a>
+          <a class="story story-ink" href="/cronicas"><div class="story-meta"><span>Crónica</span><span>02</span></div><h3>El hombre que durmió seis meses en el mismo bar</h3><p>En Boedo hay una mesa que todavía conserva la forma de su espalda.</p><footer>Por Simón Vallejos <span>Leer →</span></footer></a>
+          <a class="story story-blue" href="/poesia"><div class="story-meta"><span>Poesía</span><span>03</span></div><h3>Poemas para leer mientras esperás el 152</h3><p>Cinco paradas, tres promesas y una ciudad que siempre llega tarde.</p><footer>Por Malena Ortiz <span>Leer →</span></footer></a>
         </div>
       </section>
       <section class="manifesto" id="madriguera" aria-labelledby="manifiesto">
         <div class="manifesto-title"><span>MANIFIESTO / 001</span><h2 id="manifiesto">No queremos limpiar nada.</h2></div>
-        <div class="manifesto-copy"><p>Somos marginados, trasladadores de enfermedades y amenazas constantes ante la higiene y la buena moral. Nos sabemos fuera de ese circuito. No nos importa.</p><p>Publicamos gente que tiene algo que contar y sabe hacerlo. Relatos crudos, historias pulp, poemas, crónicas, notas de opinión, historieta, fotografía y todo lo que pueda sobrevivir en una mochila.</p><blockquote>“Vení a revolver la basura con nosotros.”</blockquote></div>
+        <div class="manifesto-copy"><p>Somos marginados, trasladadores de enfermedades y amenazas constantes ante la higiene y la buena moral. Nos sabemos fuera de ese circuito. No nos importa.</p><p>Publicamos gente que tiene algo que contar y sabe hacerlo. Relatos crudos, historias pulp, poemas, crónicas, notas de opinión, historieta, fotografía y todo lo que pueda sobrevivir en una mochila.</p><blockquote>“Vení a revolver la basura con nosotros.”</blockquote><a class="read-link" href="/manifiesto">Leer el manifiesto <span>→</span></a></div>
       </section>
       <section class="sections" aria-labelledby="mapa">
         <div class="section-head section-head-dark"><p>Mapa de la infestación</p><h2 id="mapa">Qué publicamos</h2></div>
         <div class="section-list">
-          <article><span>01</span><h3>Relatos</h3><p>Policial, terror, realismo sucio, absurdo y fantástico urbano.</p><b>↗</b></article>
-          <article><span>02</span><h3>Bajo fondo</h3><p>Crónicas, personajes y lugares que la ciudad prefiere no mirar.</p><b>↗</b></article>
-          <article><span>03</span><h3>Versos de alcantarilla</h3><p>Poesía sin pedir permiso ni certificado de buena conducta.</p><b>↗</b></article>
-          <article><span>04</span><h3>Mala leche</h3><p>Opinión sobre cine, música, trabajo, política cotidiana y cultura popular.</p><b>↗</b></article>
-          <article><span>05</span><h3>Archivo de plagas</h3><p>Revistas, historietas y escritores que todavía muerden desde el pasado.</p><b>↗</b></article>
-          <article><span>06</span><h3>Primera infección</h3><p>Autores que publican por primera vez. Acá empieza el contagio.</p><b>↗</b></article>
+          <a href="/relatos"><span>01</span><h3>Relatos</h3><p>Policial, terror, realismo sucio, absurdo y fantástico urbano.</p><b>↗</b></a>
+          <a href="/cronicas"><span>02</span><h3>Bajo fondo</h3><p>Crónicas, personajes y lugares que la ciudad prefiere no mirar.</p><b>↗</b></a>
+          <a href="/poesia"><span>03</span><h3>Versos de alcantarilla</h3><p>Poesía sin pedir permiso ni certificado de buena conducta.</p><b>↗</b></a>
+          <a href="/manifiesto"><span>04</span><h3>Mala leche</h3><p>Opinión sobre cine, música, trabajo, política cotidiana y cultura popular.</p><b>↗</b></a>
+          <a href="/revista"><span>05</span><h3>Archivo de plagas</h3><p>Revistas, historietas y escritores que todavía muerden desde el pasado.</p><b>↗</b></a>
+          <a href="/colabora"><span>06</span><h3>Primera infección</h3><p>Autores que publican por primera vez. Acá empieza el contagio.</p><b>↗</b></a>
         </div>
       </section>
       <section class="submit" id="colabora" aria-labelledby="convocatoria">
-        <div class="submit-label">Convocatoria abierta</div><h2 id="convocatoria">Dejá tu texto en la madriguera.</h2><p>Buscamos relatos, poemas, crónicas, ensayos breves, fotos, dibujos e historietas. No hace falta haber publicado antes. Hace falta tener algo vivo entre las manos.</p><a href="mailto:colaboraciones@federatas.com">Mandar material <span>↗</span></a><small>Leemos todo. Respondemos lo que podemos. No alimentes a los editores.</small>
+        <div class="submit-label">Convocatoria abierta</div><h2 id="convocatoria">Dejá tu texto en la madriguera.</h2><p>Buscamos relatos, poemas, crónicas, ensayos breves, fotos, dibujos e historietas. No hace falta haber publicado antes. Hace falta tener algo vivo entre las manos.</p><a href="/colabora">Ver convocatoria <span>↗</span></a><small>Leemos todo. Respondemos lo que podemos. No alimentes a los editores.</small>
       </section>
-      <footer class="footer"><div class="footer-brand">FE DE RATAS</div><div><p>Escoria que vive a lo grande.</p><p>Buenos Aires, Argentina.</p></div><div><a href="#arriba">Volver a la superficie ↑</a><p>Instagram · Correo</p></div></footer>
+      <footer class="footer"><div class="footer-brand">FE DE RATAS</div><div><p>Escoria que vive a lo grande.</p><p>Buenos Aires, Argentina.</p></div><div><a href="/">Volver a la portada ↑</a><p>Instagram · Correo</p></div></footer>
     </main>
+    <script src="/script.js"></script>
   </body>
 </html>
