@@ -9,6 +9,7 @@ const editorEmpty = document.querySelector("[data-editor-empty]");
 const notesList = document.querySelector("[data-notes-list]");
 const editorState = document.querySelector("[data-editor-state]");
 const lockedMessage = document.querySelector("[data-locked-message]");
+const statusFilter = document.querySelector("[data-status-filter]");
 let session = readSession();
 let notes = [];
 let activeNote = null;
@@ -21,6 +22,10 @@ function writeSession(nextSession) {
   session = nextSession;
   if (nextSession) localStorage.setItem(sessionKey, JSON.stringify(nextSession));
   else localStorage.removeItem(sessionKey);
+}
+
+function accountIsEditor() {
+  return session?.user?.app_metadata?.role === "editor";
 }
 
 async function authRequest(path, body, token) {
@@ -70,29 +75,58 @@ function formatStatus(status) {
 }
 
 function formatDate(value) {
+  if (!value) return "Sin fecha";
   return new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short" }).format(new Date(value));
+}
+
+function slugify(value) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 180);
 }
 
 function setEditorMessage(message) {
   editorState.textContent = message;
 }
 
+function setRoleVisibility() {
+  const isEditor = accountIsEditor();
+  document.querySelectorAll("[data-editor-only]").forEach((element) => { element.hidden = !isEditor; });
+  document.querySelectorAll("[data-author-only]").forEach((element) => { element.hidden = isEditor; });
+  document.querySelector("[data-author-actions]").hidden = isEditor;
+  document.querySelector("[data-editor-actions]").hidden = !isEditor;
+  document.querySelector("[data-list-title]").textContent = isEditor ? "Mesa editorial" : "Mis notas";
+  document.querySelector("[data-account-role]").textContent = isEditor ? "Editor" : "Autor";
+  document.querySelector("[data-desk-label]").innerHTML = isEditor ? "Mesa editorial<br>Material enviado" : "Mesa de autores<br>Solo material propio";
+  document.querySelector("[data-empty-title]").textContent = isEditor ? "La bandeja está limpia." : "Una hoja en blanco también muerde.";
+  document.querySelector("[data-empty-copy]").textContent = isEditor
+    ? "Cuando un autor envíe una nota, va a aparecer acá. Los borradores privados nunca entran en esta mesa."
+    : "Creá una nota o abrí uno de tus borradores. Nadie desde esta pantalla puede tocar la portada, las secciones ni los textos de otros autores.";
+}
+
 function setLoggedIn(loggedIn) {
   loginView.hidden = loggedIn;
   workspace.hidden = !loggedIn;
-  if (loggedIn) document.querySelector("[data-author-email]").textContent = session.user.email;
+  if (loggedIn) {
+    document.querySelector("[data-account-email]").textContent = session.user.email;
+    setRoleVisibility();
+  }
+}
+
+function filteredNotes() {
+  if (!accountIsEditor() || statusFilter.value === "all") return notes;
+  return notes.filter((note) => note.status === statusFilter.value);
 }
 
 function renderNotes() {
+  const visibleNotes = filteredNotes();
   notesList.replaceChildren();
-  if (!notes.length) {
+  if (!visibleNotes.length) {
     const message = document.createElement("p");
     message.className = "author-chip";
-    message.textContent = "Todavía no dejaste ningún borrador.";
+    message.textContent = accountIsEditor() ? "No hay notas en este estado." : "Todavía no dejaste ningún borrador.";
     notesList.append(message);
     return;
   }
-  notes.forEach((note) => {
+  visibleNotes.forEach((note) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = `note-item${activeNote?.id === note.id ? " is-active" : ""}`;
@@ -106,37 +140,62 @@ function renderNotes() {
     date.dateTime = note.updated_at;
     date.textContent = formatDate(note.updated_at);
     meta.append(status, date);
-    button.append(title, meta);
+    button.append(title);
+    if (accountIsEditor()) {
+      const author = document.createElement("small");
+      author.textContent = note.author_email || `Autor ${note.author_id.slice(0, 8)}`;
+      button.append(author);
+    }
+    button.append(meta);
     button.addEventListener("click", () => openNote(note));
     notesList.append(button);
   });
 }
 
+function setFormDisabled(disabled) {
+  ["title", "excerpt", "category", "content"].forEach((name) => { editorForm.elements[name].disabled = disabled; });
+}
+
 function openNote(note) {
   activeNote = note;
+  const isEditor = accountIsEditor();
+  const authorCanEdit = note.status === "draft" || note.status === "rejected";
   editorEmpty.hidden = true;
   editorForm.hidden = false;
   editorForm.elements.title.value = note.title || "";
   editorForm.elements.excerpt.value = note.excerpt || "";
   editorForm.elements.category.value = note.category || "relato";
   editorForm.elements.content.value = note.content || "";
-  const locked = note.status !== "draft";
-  [...editorForm.elements].forEach((field) => field.disabled = locked);
-  lockedMessage.hidden = !locked;
+  editorForm.elements.slug.value = note.slug || "";
+  editorForm.elements.editorial_notes.value = note.editorial_notes || "";
+  setFormDisabled(!isEditor && !authorCanEdit);
+  editorForm.elements.slug.disabled = !isEditor;
+  editorForm.elements.editorial_notes.disabled = !isEditor;
+  lockedMessage.hidden = isEditor || authorCanEdit;
   document.querySelector("[data-note-status]").textContent = formatStatus(note.status);
-  setEditorMessage(locked ? "Solo lectura" : "Borrador abierto");
+  document.querySelector("[data-note-author]").textContent = note.author_email || `Autor ${note.author_id.slice(0, 8)}`;
+  const feedback = document.querySelector("[data-author-feedback]");
+  feedback.hidden = isEditor || !note.editorial_notes;
+  document.querySelector("[data-author-feedback-text]").textContent = note.editorial_notes || "";
+  document.querySelector("[data-author-actions]").hidden = isEditor || !authorCanEdit;
+  document.querySelector("[data-editor-actions]").hidden = !isEditor;
+  document.querySelector("[data-review-note]").hidden = !isEditor || note.status === "submitted";
+  setEditorMessage(isEditor ? "Edición abierta" : authorCanEdit ? "Borrador abierto" : "Solo lectura");
   updateWordCount();
   renderNotes();
 }
 
+const noteSelection = "id,author_id,author_email,title,excerpt,content,category,status,slug,editorial_notes,created_at,updated_at,submitted_at,published_at,reviewed_at";
+
 async function loadNotes() {
-  notes = await api("notes?select=id,title,excerpt,content,category,status,created_at,updated_at&order=updated_at.desc");
+  notes = await api(`notes?select=${noteSelection}&order=updated_at.desc`);
   renderNotes();
 }
 
 async function createNote() {
+  if (accountIsEditor()) return;
   setEditorMessage("Abriendo una hoja nueva…");
-  const created = await api("notes?select=id,title,excerpt,content,category,status,created_at,updated_at", {
+  const created = await api(`notes?select=${noteSelection}`, {
     method: "POST",
     headers: { Prefer: "return=representation" },
     body: JSON.stringify({ author_id: session.user.id, category: "relato", status: "draft" })
@@ -145,7 +204,7 @@ async function createNote() {
   openNote(created[0]);
 }
 
-function notePayload(status = "draft") {
+function authorPayload(status = "draft") {
   const data = new FormData(editorForm);
   return {
     title: String(data.get("title") || "").trim(),
@@ -156,23 +215,49 @@ function notePayload(status = "draft") {
   };
 }
 
-async function saveNote(status = "draft") {
-  if (!activeNote || activeNote.status !== "draft") return;
-  const payload = notePayload(status);
-  if (status === "submitted" && (!payload.title || !payload.content)) {
-    setEditorMessage("Faltan el título o el texto.");
-    return;
-  }
-  setEditorMessage(status === "submitted" ? "Enviando a edición…" : "Guardando…");
-  const updated = await api(`notes?id=eq.${encodeURIComponent(activeNote.id)}&select=id,title,excerpt,content,category,status,created_at,updated_at`, {
+function editorialPayload(status = activeNote.status) {
+  const data = new FormData(editorForm);
+  const title = String(data.get("title") || "").trim();
+  return {
+    title,
+    excerpt: String(data.get("excerpt") || "").trim(),
+    category: String(data.get("category") || "relato"),
+    content: String(data.get("content") || "").trim(),
+    editorial_notes: String(data.get("editorial_notes") || "").trim(),
+    slug: slugify(String(data.get("slug") || "").trim() || title),
+    status
+  };
+}
+
+async function updateActiveNote(payload, message) {
+  const updated = await api(`notes?id=eq.${encodeURIComponent(activeNote.id)}&select=${noteSelection}`, {
     method: "PATCH",
     headers: { Prefer: "return=representation" },
     body: JSON.stringify(payload)
   });
+  if (!updated?.length) throw new Error("La nota cambió o ya no tenés permiso para editarla.");
   activeNote = updated[0];
   notes = notes.map((note) => note.id === activeNote.id ? activeNote : note).sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
   openNote(activeNote);
-  setEditorMessage(status === "submitted" ? "Enviada. Ya no puede modificarse." : "Borrador guardado.");
+  setEditorMessage(message);
+}
+
+async function saveAuthorNote(status = "draft") {
+  if (!activeNote || accountIsEditor() || !["draft", "rejected"].includes(activeNote.status)) return;
+  const payload = authorPayload(status);
+  if (status === "submitted" && (!payload.title || !payload.content)) throw new Error("Faltan el título o el texto.");
+  setEditorMessage(status === "submitted" ? "Enviando a edición…" : "Guardando…");
+  await updateActiveNote(payload, status === "submitted" ? "Enviada. Ya no puede modificarse." : "Borrador guardado.");
+}
+
+async function saveEditorialNote(status = activeNote?.status) {
+  if (!activeNote || !accountIsEditor()) return;
+  const payload = editorialPayload(status);
+  if (!payload.title || !payload.content) throw new Error("La nota necesita título y texto.");
+  if (status === "rejected" && !payload.editorial_notes) throw new Error("Escribí una observación antes de devolverla.");
+  setEditorMessage(status === "published" ? "Publicando…" : status === "rejected" ? "Devolviendo…" : "Guardando correcciones…");
+  const message = status === "published" ? "Marcada como publicada." : status === "rejected" ? "Devuelta al autor con observaciones." : status === "submitted" ? "Devuelta a la cola de edición." : "Correcciones guardadas.";
+  await updateActiveNote(payload, message);
 }
 
 function updateWordCount() {
@@ -193,6 +278,7 @@ loginForm.addEventListener("submit", async (event) => {
     setLoggedIn(true);
     await loadNotes();
     loginForm.reset();
+    loginMessage.textContent = "";
   } catch (error) {
     loginMessage.textContent = error.message === "Invalid login credentials" ? "Correo o contraseña incorrectos." : error.message;
   } finally {
@@ -206,17 +292,32 @@ document.querySelector("[data-logout]").addEventListener("click", async () => {
   writeSession(null);
   notes = [];
   activeNote = null;
+  editorForm.hidden = true;
+  editorEmpty.hidden = false;
   setLoggedIn(false);
 });
-editorForm.addEventListener("submit", (event) => { event.preventDefault(); saveNote().catch((error) => setEditorMessage(error.message)); });
+editorForm.addEventListener("submit", (event) => { event.preventDefault(); saveAuthorNote().catch((error) => setEditorMessage(error.message)); });
 document.querySelector("[data-submit-note]").addEventListener("click", () => {
-  if (window.confirm("¿Enviar esta nota a edición? Después no vas a poder cambiarla.")) saveNote("submitted").catch((error) => setEditorMessage(error.message));
+  if (window.confirm("¿Enviar esta nota a edición? Después no vas a poder cambiarla hasta que la mesa la devuelva.")) saveAuthorNote("submitted").catch((error) => setEditorMessage(error.message));
 });
+document.querySelector("[data-editor-save]").addEventListener("click", () => saveEditorialNote().catch((error) => setEditorMessage(error.message)));
+document.querySelector("[data-return-note]").addEventListener("click", () => {
+  if (window.confirm("¿Devolver esta nota al autor con las observaciones escritas?")) saveEditorialNote("rejected").catch((error) => setEditorMessage(error.message));
+});
+document.querySelector("[data-review-note]").addEventListener("click", () => saveEditorialNote("submitted").catch((error) => setEditorMessage(error.message)));
+document.querySelector("[data-publish-note]").addEventListener("click", () => {
+  if (window.confirm("¿Marcar esta nota como publicada?")) saveEditorialNote("published").catch((error) => setEditorMessage(error.message));
+});
+statusFilter.addEventListener("change", renderNotes);
 editorForm.elements.content.addEventListener("input", updateWordCount);
+editorForm.elements.title.addEventListener("blur", () => {
+  if (accountIsEditor() && !editorForm.elements.slug.value) editorForm.elements.slug.value = slugify(editorForm.elements.title.value);
+});
 
 (async function boot() {
   if (!session?.access_token) return setLoggedIn(false);
   try {
+    await refreshSession();
     setLoggedIn(true);
     await loadNotes();
   } catch {
