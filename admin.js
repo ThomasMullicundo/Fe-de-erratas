@@ -10,6 +10,10 @@ const notesList = document.querySelector("[data-notes-list]");
 const editorState = document.querySelector("[data-editor-state]");
 const lockedMessage = document.querySelector("[data-locked-message]");
 const statusFilter = document.querySelector("[data-status-filter]");
+const editorPanel = document.querySelector("[data-editor-panel]");
+const teamPanel = document.querySelector("[data-team-panel]");
+const teamList = document.querySelector("[data-team-list]");
+const teamMessage = document.querySelector("[data-team-message]");
 let session = readSession();
 let notes = [];
 let activeNote = null;
@@ -25,7 +29,11 @@ function writeSession(nextSession) {
 }
 
 function accountIsEditor() {
-  return session?.user?.app_metadata?.role === "editor";
+  return ["editor", "owner"].includes(session?.user?.app_metadata?.role);
+}
+
+function accountIsOwner() {
+  return session?.user?.app_metadata?.role === "owner";
 }
 
 async function authRequest(path, body, token) {
@@ -89,13 +97,15 @@ function setEditorMessage(message) {
 
 function setRoleVisibility() {
   const isEditor = accountIsEditor();
+  const isOwner = accountIsOwner();
   document.querySelectorAll("[data-editor-only]").forEach((element) => { element.hidden = !isEditor; });
   document.querySelectorAll("[data-author-only]").forEach((element) => { element.hidden = isEditor; });
+  document.querySelectorAll("[data-owner-only]").forEach((element) => { element.hidden = !isOwner; });
   document.querySelector("[data-author-actions]").hidden = isEditor;
   document.querySelector("[data-editor-actions]").hidden = !isEditor;
   document.querySelector("[data-list-title]").textContent = isEditor ? "Mesa editorial" : "Mis notas";
-  document.querySelector("[data-account-role]").textContent = isEditor ? "Editor" : "Autor";
-  document.querySelector("[data-desk-label]").innerHTML = isEditor ? "Mesa editorial<br>Material enviado" : "Mesa de autores<br>Solo material propio";
+  document.querySelector("[data-account-role]").textContent = isOwner ? "Propietario" : isEditor ? "Editor" : "Autor";
+  document.querySelector("[data-desk-label]").innerHTML = isOwner ? "Dirección editorial<br>Control total" : isEditor ? "Mesa editorial<br>Material enviado" : "Mesa de autores<br>Solo material propio";
   document.querySelector("[data-empty-title]").textContent = isEditor ? "La bandeja está limpia." : "Una hoja en blanco también muerde.";
   document.querySelector("[data-empty-copy]").textContent = isEditor
     ? "Cuando un autor envíe una nota, va a aparecer acá. Los borradores privados nunca entran en esta mesa."
@@ -266,6 +276,95 @@ function updateWordCount() {
   document.querySelector("[data-word-count]").textContent = `${count} ${count === 1 ? "palabra" : "palabras"}`;
 }
 
+async function teamRequest(body, retry = true) {
+  if (!accountIsOwner()) throw new Error("Solo el propietario puede administrar el equipo.");
+  const response = await fetch(`${config.url}/functions/v1/manage-team`, {
+    method: "POST",
+    headers: {
+      apikey: config.publishableKey,
+      Authorization: `Bearer ${session.access_token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+  if (response.status === 401 && retry) {
+    await refreshSession();
+    return teamRequest(body, false);
+  }
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.error || "No pudimos administrar el equipo.");
+  return payload;
+}
+
+function roleLabel(role) {
+  return { owner: "Propietario", editor: "Editor", author: "Autor" }[role] || "Autor";
+}
+
+function renderTeam(users) {
+  teamList.replaceChildren();
+  users.forEach((user) => {
+    const row = document.createElement("article");
+    row.className = "team-row";
+    const identity = document.createElement("div");
+    const email = document.createElement("strong");
+    email.textContent = user.email || "Cuenta sin correo";
+    const meta = document.createElement("small");
+    meta.textContent = user.is_self ? "Tu cuenta · usuario principal" : `Alta: ${formatDate(user.created_at)}`;
+    identity.append(email, meta);
+
+    if (user.role === "owner") {
+      const badge = document.createElement("b");
+      badge.className = "role-chip owner-chip";
+      badge.textContent = roleLabel(user.role);
+      row.append(identity, badge);
+    } else {
+      const select = document.createElement("select");
+      select.setAttribute("aria-label", `Rol de ${user.email}`);
+      [["author", "Autor"], ["editor", "Editor"]].forEach(([value, label]) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = label;
+        option.selected = user.role === value;
+        select.append(option);
+      });
+      select.addEventListener("change", async () => {
+        select.disabled = true;
+        teamMessage.textContent = "Cambiando permisos…";
+        try {
+          await teamRequest({ action: "update_role", user_id: user.id, role: select.value });
+          teamMessage.textContent = `${user.email} ahora tiene rol de ${roleLabel(select.value).toLowerCase()}. El cambio se verá en su próximo inicio de sesión.`;
+        } catch (error) {
+          select.value = user.role;
+          teamMessage.textContent = error.message;
+        } finally {
+          select.disabled = false;
+        }
+      });
+      row.append(identity, select);
+    }
+    teamList.append(row);
+  });
+}
+
+async function loadTeam() {
+  teamMessage.textContent = "Revisando la lista…";
+  const { users } = await teamRequest({ action: "list_users" });
+  renderTeam(users);
+  teamMessage.textContent = `${users.length} ${users.length === 1 ? "cuenta" : "cuentas"} en la redacción.`;
+}
+
+async function openTeam() {
+  if (!accountIsOwner()) return;
+  editorPanel.hidden = true;
+  teamPanel.hidden = false;
+  await loadTeam();
+}
+
+function closeTeam() {
+  teamPanel.hidden = true;
+  editorPanel.hidden = false;
+}
+
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const submit = loginForm.querySelector("button");
@@ -294,6 +393,8 @@ document.querySelector("[data-logout]").addEventListener("click", async () => {
   activeNote = null;
   editorForm.hidden = true;
   editorEmpty.hidden = false;
+  teamPanel.hidden = true;
+  editorPanel.hidden = false;
   setLoggedIn(false);
 });
 editorForm.addEventListener("submit", (event) => { event.preventDefault(); saveAuthorNote().catch((error) => setEditorMessage(error.message)); });
@@ -307,6 +408,26 @@ document.querySelector("[data-return-note]").addEventListener("click", () => {
 document.querySelector("[data-review-note]").addEventListener("click", () => saveEditorialNote("submitted").catch((error) => setEditorMessage(error.message)));
 document.querySelector("[data-publish-note]").addEventListener("click", () => {
   if (window.confirm("¿Marcar esta nota como publicada?")) saveEditorialNote("published").catch((error) => setEditorMessage(error.message));
+});
+document.querySelector("[data-team-open]").addEventListener("click", () => openTeam().catch((error) => { teamMessage.textContent = error.message; }));
+document.querySelector("[data-team-close]").addEventListener("click", closeTeam);
+document.querySelector("[data-invite-form]").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const submit = form.querySelector("button");
+  submit.disabled = true;
+  teamMessage.textContent = "Enviando invitación…";
+  try {
+    const email = new FormData(form).get("email");
+    await teamRequest({ action: "invite_user", email });
+    form.reset();
+    await loadTeam();
+    teamMessage.textContent = `Invitación enviada a ${email}. La cuenta ingresará como autora.`;
+  } catch (error) {
+    teamMessage.textContent = error.message;
+  } finally {
+    submit.disabled = false;
+  }
 });
 statusFilter.addEventListener("change", renderNotes);
 editorForm.elements.content.addEventListener("input", updateWordCount);
