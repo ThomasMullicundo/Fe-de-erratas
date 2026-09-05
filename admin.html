@@ -47,11 +47,12 @@
               <option value="published">Publicadas</option>
             </select>
           </label>
+          <button class="admin-button team-button" type="button" data-team-open data-owner-only hidden>Gestionar equipo</button>
           <div class="notes-list" data-notes-list></div>
           <button class="admin-button logout-button" type="button" data-logout>Salir</button>
         </aside>
 
-        <section class="editor-panel">
+        <section class="editor-panel" data-editor-panel>
           <div class="editor-empty" data-editor-empty>
             <p class="kicker">Mesa de trabajo</p>
             <h2 data-empty-title>Una hoja en blanco también muerde.</h2>
@@ -118,6 +119,26 @@
               <span class="editor-state" data-editor-state aria-live="polite"></span>
             </div>
           </form>
+        </section>
+
+        <section class="team-panel" data-team-panel hidden>
+          <div class="team-head">
+            <div>
+              <p class="kicker">Control de acceso</p>
+              <h2>Equipo de la madriguera</h2>
+              <p>Invitá autores y decidí quién entra a la mesa editorial. El rol Propietario queda reservado para tu cuenta.</p>
+            </div>
+            <button class="admin-button review-note" type="button" data-team-close>Volver a notas</button>
+          </div>
+          <form class="invite-form" data-invite-form>
+            <label for="invite-email">Invitar por correo</label>
+            <div>
+              <input id="invite-email" name="email" type="email" placeholder="autor@correo.com" required>
+              <button class="admin-button" type="submit">Invitar como autor</button>
+            </div>
+          </form>
+          <p class="team-message" data-team-message aria-live="polite"></p>
+          <div class="team-list" data-team-list></div>
         </section>
       </section>
     </main>
