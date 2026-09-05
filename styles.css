@@ -162,6 +162,31 @@ nav a[aria-current="page"] { background:var(--blue); color:white; }
 .editor-actions-group { display:flex; flex-wrap:wrap; gap:10px; }
 .return-note { background:var(--red); }
 .review-note { background:var(--paper-light); color:var(--ink); }
+.team-button { width:100%; margin:-4px 0 18px; background:var(--ink); }
+.team-panel { padding:clamp(25px,4vw,60px); }
+.team-head { display:flex; justify-content:space-between; gap:30px; align-items:start; padding-bottom:26px; border-bottom:4px solid var(--ink); }
+.team-head h2 { margin:8px 0 14px; font:900 clamp(3rem,6vw,6.5rem)/.82 Impact,sans-serif; text-transform:uppercase; letter-spacing:-.035em; }
+.team-head p { max-width:680px; line-height:1.45; }
+.invite-form { margin:28px 0 18px; padding:20px; border:3px solid var(--ink); background:var(--paper-light); }
+.invite-form label { display:block; margin-bottom:9px; font:900 .72rem/1 Arial,sans-serif; text-transform:uppercase; letter-spacing:.1em; }
+.invite-form>div { display:grid; grid-template-columns:1fr auto; }
+.invite-form input { min-width:0; border:2px solid var(--ink); border-right:0; border-radius:0; background:var(--paper); color:var(--ink); padding:13px; font:inherit; }
+.team-message { min-height:1.3em; color:var(--red); font:800 .72rem/1.4 Arial,sans-serif; text-transform:uppercase; }
+.team-list { border-top:2px solid var(--ink); }
+.team-row { display:grid; grid-template-columns:1fr minmax(150px,220px); gap:24px; align-items:center; padding:17px 8px; border-bottom:2px solid var(--ink); }
+.team-row strong,.team-row small { display:block; }
+.team-row strong { font-size:1.05rem; overflow-wrap:anywhere; }
+.team-row small { margin-top:6px; font:700 .68rem/1.3 Arial,sans-serif; text-transform:uppercase; color:var(--blue); }
+.team-row select { width:100%; padding:11px; border:2px solid var(--ink); border-radius:0; background:var(--paper-light); color:var(--ink); font:900 .72rem/1 Arial,sans-serif; text-transform:uppercase; }
+.owner-chip { background:var(--red); }
+.archive-grid { display:grid; grid-template-columns:1.35fr .65fr; gap:24px; }
+.archive-card { min-height:380px; position:relative; padding:clamp(24px,4vw,48px); border:3px solid var(--ink); background:var(--paper-light); overflow:hidden; }
+.archive-card-featured { background:var(--blue); color:white; box-shadow:12px 14px 0 var(--red); }
+.archive-card>span { font:900 .72rem/1 Arial,sans-serif; text-transform:uppercase; letter-spacing:.13em; }
+.archive-card h2 { max-width:8ch; margin:32px 0 18px; font:900 clamp(3.5rem,7vw,7rem)/.8 Impact,sans-serif; text-transform:uppercase; letter-spacing:-.035em; }
+.archive-card p { max-width:580px; font-size:1.1rem; line-height:1.45; }
+.archive-card-featured .read-link { background:white; color:var(--blue); }
+.archive-stamp { position:absolute; right:-12px; bottom:25px; width:140px; height:140px; display:grid; place-items:center; border:4px solid var(--red); border-radius:50%; color:var(--red); font:900 1rem/1 Impact,sans-serif; text-align:center; text-transform:uppercase; transform:rotate(-12deg); }
 [hidden] { display:none !important; }
 @media (max-width:900px) {
   nav { overflow-x:auto; justify-content:flex-start; } nav a { white-space:nowrap; }
@@ -185,5 +210,8 @@ nav a[aria-current="page"] { background:var(--blue); color:white; }
   .admin-workspace { display:block; } .notes-panel { border-right:0; border-bottom:3px solid var(--ink); }
   .notes-list { grid-template-columns:repeat(2,minmax(0,1fr)); } .logout-button { width:auto; }
   .editor-panel { min-height:65vh; } .editor-state { width:100%; margin-left:0; }
+  .team-head { display:block; } .team-head button { margin-top:12px; }
+  .invite-form>div,.team-row { grid-template-columns:1fr; } .invite-form input { border-right:2px solid var(--ink); border-bottom:0; }
+  .archive-grid { grid-template-columns:1fr; }
 }
 @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } .crawl div { animation:none; } }
