@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex,nofollow">
-    <title>Mesa de autores — Fe de ratas</title>
+    <title>Redacción — Fe de ratas</title>
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body class="admin-body">
     <main class="admin-shell">
       <header class="admin-head">
         <a class="admin-brand" href="/">FE DE RATAS</a>
-        <p>Mesa de autores<br>Solo material propio</p>
+        <p data-desk-label>Acceso a redacción<br>Autores y editores</p>
       </header>
 
       <section class="admin-login" data-login-view>
@@ -19,7 +19,7 @@
           <span class="stamp">Acceso<br>infectado</span>
           <p class="kicker">Entrada a la redacción</p>
           <h1>Mostrá tus papeles.</h1>
-          <p>Este acceso es solo para autores invitados. Desde acá podés escribir y enviar tus notas; el resto del sitio queda fuera de alcance.</p>
+          <p>Este acceso es solo para autores y editores invitados. Cada cuenta abre únicamente las herramientas que le corresponden.</p>
           <form class="admin-form" data-login-form>
             <label for="author-email">Correo</label>
             <input id="author-email" name="email" type="email" autocomplete="username" required>
@@ -33,8 +33,20 @@
 
       <section class="admin-workspace" data-workspace hidden>
         <aside class="notes-panel">
-          <div class="notes-panel-head"><h1>Mis notas</h1><button class="admin-button new-note" type="button" data-new-note aria-label="Crear una nota">+</button></div>
-          <p class="author-chip" data-author-email></p>
+          <div class="notes-panel-head">
+            <h1 data-list-title>Mis notas</h1>
+            <button class="admin-button new-note" type="button" data-new-note data-author-only aria-label="Crear una nota">+</button>
+          </div>
+          <p class="author-chip"><span data-account-email></span><b class="role-chip" data-account-role></b></p>
+          <label class="queue-filter" data-editor-only hidden>
+            Ver estado
+            <select data-status-filter>
+              <option value="all">Todas</option>
+              <option value="submitted">En edición</option>
+              <option value="rejected">Devueltas</option>
+              <option value="published">Publicadas</option>
+            </select>
+          </label>
           <div class="notes-list" data-notes-list></div>
           <button class="admin-button logout-button" type="button" data-logout>Salir</button>
         </aside>
@@ -42,25 +54,67 @@
         <section class="editor-panel">
           <div class="editor-empty" data-editor-empty>
             <p class="kicker">Mesa de trabajo</p>
-            <h2>Una hoja en blanco también muerde.</h2>
-            <p>Creá una nota o abrí uno de tus borradores. Nadie desde esta pantalla puede tocar la portada, las secciones ni los textos de otros autores.</p>
-            <button class="admin-button" type="button" data-new-note>Crear mi primera nota</button>
+            <h2 data-empty-title>Una hoja en blanco también muerde.</h2>
+            <p data-empty-copy>Creá una nota o abrí uno de tus borradores. Nadie desde esta pantalla puede tocar la portada, las secciones ni los textos de otros autores.</p>
+            <button class="admin-button" type="button" data-new-note data-author-only>Crear mi primera nota</button>
           </div>
 
           <form class="editor-form" data-editor-form hidden>
-            <div class="editor-topline"><span data-note-status>Borrador</span><span data-word-count>0 palabras</span></div>
+            <div class="editor-topline">
+              <span data-note-status>Borrador</span>
+              <span data-word-count>0 palabras</span>
+            </div>
+            <p class="author-line" data-editor-only hidden>Enviado por <strong data-note-author></strong></p>
             <div class="locked-note" data-locked-message hidden>Esta nota ya fue enviada a edición y quedó cerrada para cambios.</div>
+            <div class="editor-feedback" data-author-feedback hidden>
+              <strong>Observaciones de la mesa</strong>
+              <p data-author-feedback-text></p>
+            </div>
+
             <label for="note-title">Título</label>
             <input id="note-title" name="title" maxlength="180" placeholder="Un título que deje marca" required>
             <div class="editor-grid">
-              <div><label for="note-excerpt">Bajada</label><textarea id="note-excerpt" name="excerpt" rows="4" maxlength="500" placeholder="Una entrada breve para la nota"></textarea></div>
-              <div><label for="note-category">Tipo de material</label><select id="note-category" name="category"><option value="relato">Relato</option><option value="cronica">Crónica</option><option value="poesia">Poesía</option><option value="opinion">Opinión</option><option value="historieta">Historieta</option><option value="fotografia">Fotografía</option></select></div>
+              <div>
+                <label for="note-excerpt">Bajada</label>
+                <textarea id="note-excerpt" name="excerpt" rows="4" maxlength="500" placeholder="Una entrada breve para la nota"></textarea>
+              </div>
+              <div>
+                <label for="note-category">Tipo de material</label>
+                <select id="note-category" name="category">
+                  <option value="relato">Relato</option>
+                  <option value="cronica">Crónica</option>
+                  <option value="poesia">Poesía</option>
+                  <option value="opinion">Opinión</option>
+                  <option value="historieta">Historieta</option>
+                  <option value="fotografia">Fotografía</option>
+                </select>
+              </div>
             </div>
             <label for="note-content">Texto</label>
             <textarea id="note-content" name="content" placeholder="Escribí acá. El borrador queda guardado en tu cuenta." required></textarea>
+
+            <div class="editor-tools" data-editor-only hidden>
+              <div>
+                <label for="note-slug">Dirección de publicación</label>
+                <input id="note-slug" name="slug" maxlength="180" placeholder="titulo-de-la-nota">
+              </div>
+              <div>
+                <label for="editorial-notes">Observaciones para el autor</label>
+                <textarea id="editorial-notes" name="editorial_notes" rows="5" maxlength="3000" placeholder="Qué corregir, qué falta o por qué vuelve la nota"></textarea>
+              </div>
+            </div>
+
             <div class="editor-actions">
-              <button class="admin-button" type="submit" data-save>Guardar borrador</button>
-              <button class="admin-button submit-note" type="button" data-submit-note>Enviar a edición</button>
+              <div class="editor-actions-group" data-author-actions>
+                <button class="admin-button" type="submit">Guardar borrador</button>
+                <button class="admin-button submit-note" type="button" data-submit-note>Enviar a edición</button>
+              </div>
+              <div class="editor-actions-group" data-editor-actions hidden>
+                <button class="admin-button" type="button" data-editor-save>Guardar correcciones</button>
+                <button class="admin-button return-note" type="button" data-return-note>Devolver al autor</button>
+                <button class="admin-button review-note" type="button" data-review-note>Pasar a edición</button>
+                <button class="admin-button submit-note" type="button" data-publish-note>Publicar</button>
+              </div>
               <span class="editor-state" data-editor-state aria-live="polite"></span>
             </div>
           </form>
