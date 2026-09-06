@@ -11,7 +11,7 @@
   if (!slug) return fail("No encontramos la dirección de este artículo.");
 
   try {
-    const fields = "title,excerpt,content,category,byline,destination,slug,published_at";
+    const fields = "title,excerpt,content,category,byline,destination,hero_image_url,hero_image_alt,slug,published_at";
     const response = await fetch(`${config.url}/rest/v1/articles?select=${fields}&status=eq.published&slug=eq.${encodeURIComponent(slug)}&limit=1`, {
       headers: { apikey: config.publishableKey }
     });
@@ -30,6 +30,11 @@
     date.dateTime = article.published_at;
     date.textContent = new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "long", year: "numeric" }).format(new Date(article.published_at));
     document.querySelector("[data-article-reading]").textContent = `${Math.max(1, Math.ceil(words / 220))} min de lectura`;
+    const hero = document.querySelector("[data-article-hero]");
+    hero.hidden = !article.hero_image_url;
+    document.querySelector("[data-article-image]").src = article.hero_image_url || "";
+    document.querySelector("[data-article-image]").alt = article.hero_image_alt || "";
+    document.querySelector("[data-article-image-caption]").textContent = article.hero_image_alt || "";
     document.querySelector("[data-article-content]").innerHTML = window.FE_DE_RATAS_RENDER_MARKDOWN(article.content);
     loading.hidden = true;
     articleView.hidden = false;
