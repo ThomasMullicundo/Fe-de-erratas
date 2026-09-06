@@ -14,6 +14,7 @@ const editorPanel = document.querySelector("[data-editor-panel]");
 const teamPanel = document.querySelector("[data-team-panel]");
 const teamList = document.querySelector("[data-team-list]");
 const teamMessage = document.querySelector("[data-team-message]");
+const preview = document.querySelector("[data-preview]");
 let session = readSession();
 let notes = [];
 let activeNote = null;
@@ -108,7 +109,7 @@ function setRoleVisibility() {
   document.querySelector("[data-desk-label]").innerHTML = isOwner ? "Dirección editorial<br>Control total" : isEditor ? "Mesa editorial<br>Material enviado" : "Mesa de autores<br>Solo material propio";
   document.querySelector("[data-empty-title]").textContent = isEditor ? "La bandeja está limpia." : "Una hoja en blanco también muerde.";
   document.querySelector("[data-empty-copy]").textContent = isEditor
-    ? "Cuando un autor envíe una nota, va a aparecer acá. Los borradores privados nunca entran en esta mesa."
+    ? "Revisá envíos o creá un artículo propio para el Archivo. Los borradores ajenos siguen siendo privados."
     : "Creá una nota o abrí uno de tus borradores. Nadie desde esta pantalla puede tocar la portada, las secciones ni los textos de otros autores.";
 }
 
@@ -163,7 +164,7 @@ function renderNotes() {
 }
 
 function setFormDisabled(disabled) {
-  ["title", "excerpt", "category", "content"].forEach((name) => { editorForm.elements[name].disabled = disabled; });
+  ["title", "excerpt", "category", "byline", "content"].forEach((name) => { editorForm.elements[name].disabled = disabled; });
 }
 
 function openNote(note) {
@@ -175,6 +176,7 @@ function openNote(note) {
   editorForm.elements.title.value = note.title || "";
   editorForm.elements.excerpt.value = note.excerpt || "";
   editorForm.elements.category.value = note.category || "relato";
+  editorForm.elements.byline.value = note.byline || "";
   editorForm.elements.content.value = note.content || "";
   editorForm.elements.slug.value = note.slug || "";
   editorForm.elements.editorial_notes.value = note.editorial_notes || "";
@@ -195,7 +197,7 @@ function openNote(note) {
   renderNotes();
 }
 
-const noteSelection = "id,author_id,author_email,title,excerpt,content,category,status,slug,editorial_notes,created_at,updated_at,submitted_at,published_at,reviewed_at";
+const noteSelection = "id,author_id,author_email,title,excerpt,content,category,byline,status,slug,editorial_notes,created_at,updated_at,submitted_at,published_at,reviewed_at";
 
 async function loadNotes() {
   notes = await api(`notes?select=${noteSelection}&order=updated_at.desc`);
@@ -203,7 +205,6 @@ async function loadNotes() {
 }
 
 async function createNote() {
-  if (accountIsEditor()) return;
   setEditorMessage("Abriendo una hoja nueva…");
   const created = await api(`notes?select=${noteSelection}`, {
     method: "POST",
@@ -220,6 +221,7 @@ function authorPayload(status = "draft") {
     title: String(data.get("title") || "").trim(),
     excerpt: String(data.get("excerpt") || "").trim(),
     category: String(data.get("category") || "relato"),
+    byline: String(data.get("byline") || "").trim(),
     content: String(data.get("content") || "").trim(),
     status
   };
@@ -232,6 +234,7 @@ function editorialPayload(status = activeNote.status) {
     title,
     excerpt: String(data.get("excerpt") || "").trim(),
     category: String(data.get("category") || "relato"),
+    byline: String(data.get("byline") || "").trim(),
     content: String(data.get("content") || "").trim(),
     editorial_notes: String(data.get("editorial_notes") || "").trim(),
     slug: slugify(String(data.get("slug") || "").trim() || title),
@@ -274,6 +277,53 @@ function updateWordCount() {
   const content = editorForm.elements.content.value.trim();
   const count = content ? content.split(/\s+/).length : 0;
   document.querySelector("[data-word-count]").textContent = `${count} ${count === 1 ? "palabra" : "palabras"}`;
+}
+
+function refreshPreview() {
+  const data = new FormData(editorForm);
+  const content = String(data.get("content") || "");
+  const words = content.trim() ? content.trim().split(/\s+/).length : 0;
+  document.querySelector("[data-preview-category]").textContent = String(data.get("category") || "Artículo");
+  document.querySelector("[data-preview-title]").textContent = String(data.get("title") || "Artículo sin título");
+  document.querySelector("[data-preview-excerpt]").textContent = String(data.get("excerpt") || "");
+  document.querySelector("[data-preview-byline]").textContent = `Por ${String(data.get("byline") || "Redacción Fe de ratas")}`;
+  document.querySelector("[data-preview-reading]").textContent = `${Math.max(1, Math.ceil(words / 220))} min de lectura`;
+  document.querySelector("[data-preview-content]").innerHTML = window.FE_DE_RATAS_RENDER_MARKDOWN(content);
+}
+
+function wrapSelection(prefix, suffix = prefix, placeholder = "texto") {
+  const field = editorForm.elements.content;
+  if (field.disabled) return;
+  const start = field.selectionStart;
+  const end = field.selectionEnd;
+  const selected = field.value.slice(start, end) || placeholder;
+  field.setRangeText(`${prefix}${selected}${suffix}`, start, end, "select");
+  field.focus();
+  updateWordCount();
+  if (!preview.hidden) refreshPreview();
+}
+
+function prefixLines(prefix) {
+  const field = editorForm.elements.content;
+  if (field.disabled) return;
+  const start = field.selectionStart;
+  const end = field.selectionEnd;
+  const selected = field.value.slice(start, end) || "texto";
+  field.setRangeText(selected.split("\n").map((line) => `${prefix}${line}`).join("\n"), start, end, "select");
+  field.focus();
+  if (!preview.hidden) refreshPreview();
+}
+
+function applyFormat(format) {
+  if (format === "bold") wrapSelection("**", "**", "texto en negrita");
+  if (format === "italic") wrapSelection("*", "*", "texto en cursiva");
+  if (format === "heading") prefixLines("## ");
+  if (format === "quote") prefixLines("> ");
+  if (format === "list") prefixLines("- ");
+  if (format === "link") {
+    const url = window.prompt("Pegá la dirección del enlace (https://…)", "https://");
+    if (url) wrapSelection("[", `](${url})`, "texto del enlace");
+  }
 }
 
 async function teamRequest(body, retry = true) {
@@ -431,6 +481,13 @@ document.querySelector("[data-invite-form]").addEventListener("submit", async (e
 });
 statusFilter.addEventListener("change", renderNotes);
 editorForm.elements.content.addEventListener("input", updateWordCount);
+editorForm.addEventListener("input", () => { if (!preview.hidden) refreshPreview(); });
+document.querySelectorAll("[data-format]").forEach((button) => button.addEventListener("click", () => applyFormat(button.dataset.format)));
+document.querySelector("[data-preview-toggle]").addEventListener("click", (event) => {
+  preview.hidden = !preview.hidden;
+  event.currentTarget.textContent = preview.hidden ? "Ver vista previa" : "Cerrar vista previa";
+  if (!preview.hidden) refreshPreview();
+});
 editorForm.elements.title.addEventListener("blur", () => {
   if (accountIsEditor() && !editorForm.elements.slug.value) editorForm.elements.slug.value = slugify(editorForm.elements.title.value);
 });
