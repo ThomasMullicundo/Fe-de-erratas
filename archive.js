@@ -8,7 +8,7 @@
   }
 
   try {
-    const fields = "title,excerpt,category,byline,slug,published_at";
+    const fields = "title,excerpt,category,byline,hero_image_url,hero_image_alt,slug,published_at";
     const response = await fetch(`${config.url}/rest/v1/articles?select=${fields}&status=eq.published&destination=eq.archive&order=published_at.desc`, {
       headers: { apikey: config.publishableKey }
     });
@@ -32,6 +32,13 @@
       const number = document.createElement("span");
       number.textContent = String(index + 1).padStart(2, "0");
       const copy = document.createElement("div");
+      if (article.hero_image_url) {
+        const image = document.createElement("img");
+        image.className = "article-row-image";
+        image.src = article.hero_image_url;
+        image.alt = article.hero_image_alt || "";
+        copy.append(image);
+      }
       const title = document.createElement("h2");
       title.textContent = article.title;
       const meta = document.createElement("small");
