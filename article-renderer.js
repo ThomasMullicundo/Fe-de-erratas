@@ -63,4 +63,35 @@
     flushParagraph(); flushList();
     return output.join("");
   };
+
+  window.FE_DE_RATAS_HTML_TO_MARKDOWN = function htmlToMarkdown(html) {
+    const template = document.createElement("template");
+    template.innerHTML = String(html || "");
+
+    function convert(node) {
+      if (node.nodeType === Node.TEXT_NODE) return node.textContent;
+      if (node.nodeType !== Node.ELEMENT_NODE) return "";
+      const tag = node.tagName.toLowerCase();
+      const content = Array.from(node.childNodes).map(convert).join("");
+      if (tag === "strong" || tag === "b") return `**${content}**`;
+      if (tag === "em" || tag === "i") return `*${content}*`;
+      if (tag === "a") return `[${content}](${safeUrl(node.getAttribute("href") || "")})`;
+      if (tag === "h2") return `\n\n## ${content}\n\n`;
+      if (tag === "h3") return `\n\n### ${content}\n\n`;
+      if (tag === "blockquote") return `\n\n${content.split("\n").filter(Boolean).map((line) => `> ${line}`).join("\n")}\n\n`;
+      if (tag === "li") return `${content}\n`;
+      if (tag === "ul") return `\n${Array.from(node.children).map((item) => `- ${Array.from(item.childNodes).map(convert).join("")}`).join("\n")}\n`;
+      if (tag === "ol") return `\n${Array.from(node.children).map((item, index) => `${index + 1}. ${Array.from(item.childNodes).map(convert).join("")}`).join("\n")}\n`;
+      if (tag === "br") return "\n";
+      if (["p", "div"].includes(tag)) return `${content}\n\n`;
+      return content;
+    }
+
+    return Array.from(template.content.childNodes)
+      .map(convert)
+      .join("")
+      .replace(/\u00a0/g, " ")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  };
 })();
