@@ -35,13 +35,14 @@
         <aside class="notes-panel">
           <div class="notes-panel-head">
             <h1 data-list-title>Mis notas</h1>
-            <button class="admin-button new-note" type="button" data-new-note data-author-only aria-label="Crear una nota">+</button>
+            <button class="admin-button new-note" type="button" data-new-note aria-label="Crear una nota">+</button>
           </div>
           <p class="author-chip"><span data-account-email></span><b class="role-chip" data-account-role></b></p>
           <label class="queue-filter" data-editor-only hidden>
             Ver estado
             <select data-status-filter>
               <option value="all">Todas</option>
+              <option value="draft">Borradores propios</option>
               <option value="submitted">En edición</option>
               <option value="rejected">Devueltas</option>
               <option value="published">Publicadas</option>
@@ -57,7 +58,7 @@
             <p class="kicker">Mesa de trabajo</p>
             <h2 data-empty-title>Una hoja en blanco también muerde.</h2>
             <p data-empty-copy>Creá una nota o abrí uno de tus borradores. Nadie desde esta pantalla puede tocar la portada, las secciones ni los textos de otros autores.</p>
-            <button class="admin-button" type="button" data-new-note data-author-only>Crear mi primera nota</button>
+            <button class="admin-button" type="button" data-new-note>Crear un artículo</button>
           </div>
 
           <form class="editor-form" data-editor-form hidden>
@@ -91,8 +92,33 @@
                 </select>
               </div>
             </div>
+            <label for="note-byline">Firma pública</label>
+            <input id="note-byline" name="byline" maxlength="120" placeholder="Nombre, seudónimo o Redacción Fe de ratas">
             <label for="note-content">Texto</label>
+            <div class="format-toolbar" role="toolbar" aria-label="Formato del texto">
+              <button type="button" data-format="bold" title="Negrita"><strong>B</strong></button>
+              <button type="button" data-format="italic" title="Cursiva"><em>I</em></button>
+              <button type="button" data-format="heading" title="Subtítulo">H2</button>
+              <button type="button" data-format="quote" title="Cita">“ ”</button>
+              <button type="button" data-format="list" title="Lista">• Lista</button>
+              <button type="button" data-format="link" title="Hipervínculo">Enlace</button>
+              <span>Markdown seguro</span>
+            </div>
             <textarea id="note-content" name="content" placeholder="Escribí acá. El borrador queda guardado en tu cuenta." required></textarea>
+
+            <div class="preview-actions">
+              <button class="admin-button review-note" type="button" data-preview-toggle>Ver vista previa</button>
+              <small>La vista previa usa la misma diagramación que el artículo publicado.</small>
+            </div>
+            <section class="article-preview" data-preview hidden>
+              <div class="published-article published-article-preview">
+                <p class="published-category" data-preview-category></p>
+                <h1 data-preview-title></h1>
+                <p class="published-dek" data-preview-excerpt></p>
+                <div class="published-meta"><span data-preview-byline></span><span data-preview-reading></span></div>
+                <div class="published-body" data-preview-content></div>
+              </div>
+            </section>
 
             <div class="editor-tools" data-editor-only hidden>
               <div>
@@ -143,6 +169,7 @@
       </section>
     </main>
     <script src="/supabase-config.js"></script>
+    <script src="/article-renderer.js"></script>
     <script src="/admin.js"></script>
   </body>
 </html>
