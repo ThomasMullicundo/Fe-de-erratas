@@ -29,12 +29,21 @@
         </article>
         <article class="archive-card">
           <span>Archivo digital</span>
-          <h2>En formación</h2>
-          <p>Cuando publiquemos las primeras notas, este espacio reunirá el índice completo por fecha, autor y sección.</p>
-          <b class="archive-stamp">Todavía<br>respira</b>
+          <h2>Textos vivos</h2>
+          <p>Todo lo que publica la mesa editorial aparece acá, ordenado desde la infección más reciente.</p>
+          <b class="archive-stamp">Material<br>infectado</b>
         </article>
+      </section>
+      <section class="published-index" aria-labelledby="published-title">
+        <div class="section-head">
+          <div><p>Publicaciones digitales</p><h2 id="published-title">Últimos restos</h2></div>
+          <p data-archive-count>Revisando el archivo…</p>
+        </div>
+        <div class="article-list" data-archive-list aria-live="polite"></div>
       </section>
     </main>
     <footer class="footer"><div class="footer-brand">FE DE RATAS</div><div><p>La mugre también tiene memoria.</p><p>Buenos Aires, Argentina.</p></div><div><a href="/">Volver a la portada ↑</a></div></footer>
+    <script src="/supabase-config.js"></script>
+    <script src="/archive.js"></script>
   </body>
 </html>
