@@ -11,7 +11,7 @@
   if (!slug) return fail("No encontramos la dirección de este artículo.");
 
   try {
-    const fields = "title,excerpt,content,category,byline,slug,published_at";
+    const fields = "title,excerpt,content,category,byline,destination,slug,published_at";
     const response = await fetch(`${config.url}/rest/v1/articles?select=${fields}&status=eq.published&slug=eq.${encodeURIComponent(slug)}&limit=1`, {
       headers: { apikey: config.publishableKey }
     });
@@ -22,7 +22,7 @@
     const words = article.content.trim() ? article.content.trim().split(/\s+/).length : 0;
     document.title = `${article.title} — Fe de ratas`;
     document.querySelector('meta[name="description"]').content = article.excerpt || `Leé ${article.title} en Fe de ratas.`;
-    document.querySelector("[data-article-category]").textContent = article.category;
+    document.querySelector("[data-article-category]").textContent = article.destination === "archive" ? `Archivo · ${article.category}` : article.category;
     document.querySelector("[data-article-title]").textContent = article.title;
     document.querySelector("[data-article-excerpt]").textContent = article.excerpt;
     document.querySelector("[data-article-byline]").textContent = `Por ${article.byline}`;
