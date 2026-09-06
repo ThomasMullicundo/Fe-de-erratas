@@ -9,7 +9,7 @@
 
   try {
     const fields = "title,excerpt,category,byline,slug,published_at";
-    const response = await fetch(`${config.url}/rest/v1/articles?select=${fields}&status=eq.published&order=published_at.desc`, {
+    const response = await fetch(`${config.url}/rest/v1/articles?select=${fields}&status=eq.published&destination=eq.archive&order=published_at.desc`, {
       headers: { apikey: config.publishableKey }
     });
     if (!response.ok) throw new Error("No pudimos abrir el archivo.");
