@@ -15,6 +15,9 @@ const teamPanel = document.querySelector("[data-team-panel]");
 const teamList = document.querySelector("[data-team-list]");
 const teamMessage = document.querySelector("[data-team-message]");
 const preview = document.querySelector("[data-preview]");
+const richEditor = document.querySelector("[data-placeholder]");
+const imageInput = document.querySelector("#note-image");
+const imageUploadState = document.querySelector("[data-image-upload-state]");
 let session = readSession();
 let notes = [];
 let activeNote = null;
@@ -165,6 +168,8 @@ function renderNotes() {
 
 function setFormDisabled(disabled) {
   ["title", "excerpt", "category", "byline", "content"].forEach((name) => { editorForm.elements[name].disabled = disabled; });
+  richEditor.contentEditable = disabled ? "false" : "true";
+  richEditor.classList.toggle("is-disabled", disabled);
 }
 
 function openNote(note) {
@@ -179,12 +184,18 @@ function openNote(note) {
   editorForm.elements.byline.value = note.byline || "";
   editorForm.elements.destination_archive.checked = note.destination === "archive";
   editorForm.elements.content.value = note.content || "";
+  richEditor.innerHTML = window.FE_DE_RATAS_RENDER_MARKDOWN(note.content || "");
+  editorForm.elements.hero_image_url.value = note.hero_image_url || "";
+  editorForm.elements.hero_image_alt.value = note.hero_image_alt || "";
   editorForm.elements.slug.value = note.slug || "";
   editorForm.elements.editorial_notes.value = note.editorial_notes || "";
   setFormDisabled(!isEditor && !authorCanEdit);
   editorForm.elements.slug.disabled = !isEditor;
   editorForm.elements.editorial_notes.disabled = !isEditor;
   editorForm.elements.destination_archive.disabled = !isEditor;
+  editorForm.elements.hero_image_alt.disabled = !isEditor;
+  imageInput.disabled = !isEditor;
+  renderImagePreview(note.hero_image_url || "", note.hero_image_alt || "");
   lockedMessage.hidden = isEditor || authorCanEdit;
   document.querySelector("[data-note-status]").textContent = formatStatus(note.status);
   document.querySelector("[data-note-author]").textContent = note.author_email || `Autor ${note.author_id.slice(0, 8)}`;
@@ -199,7 +210,7 @@ function openNote(note) {
   renderNotes();
 }
 
-const noteSelection = "id,author_id,author_email,title,excerpt,content,category,byline,destination,status,slug,editorial_notes,created_at,updated_at,submitted_at,published_at,reviewed_at";
+const noteSelection = "id,author_id,author_email,title,excerpt,content,category,byline,destination,hero_image_url,hero_image_alt,status,slug,editorial_notes,created_at,updated_at,submitted_at,published_at,reviewed_at";
 
 async function loadNotes() {
   notes = await api(`notes?select=${noteSelection}&order=updated_at.desc`);
@@ -218,6 +229,7 @@ async function createNote() {
 }
 
 function authorPayload(status = "draft") {
+  syncEditorSource();
   const data = new FormData(editorForm);
   return {
     title: String(data.get("title") || "").trim(),
@@ -230,6 +242,7 @@ function authorPayload(status = "draft") {
 }
 
 function editorialPayload(status = activeNote.status) {
+  syncEditorSource();
   const data = new FormData(editorForm);
   const title = String(data.get("title") || "").trim();
   return {
@@ -238,6 +251,8 @@ function editorialPayload(status = activeNote.status) {
     category: String(data.get("category") || "relato"),
     byline: String(data.get("byline") || "").trim(),
     destination: data.get("destination_archive") === "on" ? "archive" : "section",
+    hero_image_url: String(data.get("hero_image_url") || "").trim(),
+    hero_image_alt: String(data.get("hero_image_alt") || "").trim(),
     content: String(data.get("content") || "").trim(),
     editorial_notes: String(data.get("editorial_notes") || "").trim(),
     slug: slugify(String(data.get("slug") || "").trim() || title),
@@ -282,6 +297,18 @@ function updateWordCount() {
   document.querySelector("[data-word-count]").textContent = `${count} ${count === 1 ? "palabra" : "palabras"}`;
 }
 
+function syncEditorSource() {
+  editorForm.elements.content.value = window.FE_DE_RATAS_HTML_TO_MARKDOWN(richEditor.innerHTML);
+}
+
+function renderImagePreview(url, alt) {
+  const wrap = document.querySelector("[data-image-preview-wrap]");
+  const image = document.querySelector("[data-image-preview]");
+  wrap.hidden = !url;
+  image.src = url || "";
+  image.alt = alt || "Vista previa de la imagen principal";
+}
+
 function refreshPreview() {
   const data = new FormData(editorForm);
   const content = String(data.get("content") || "");
@@ -293,41 +320,57 @@ function refreshPreview() {
   document.querySelector("[data-preview-byline]").textContent = `Por ${String(data.get("byline") || "Redacción Fe de ratas")}`;
   document.querySelector("[data-preview-reading]").textContent = `${Math.max(1, Math.ceil(words / 220))} min de lectura`;
   document.querySelector("[data-preview-content]").innerHTML = window.FE_DE_RATAS_RENDER_MARKDOWN(content);
+  const imageUrl = String(data.get("hero_image_url") || "");
+  const imageAlt = String(data.get("hero_image_alt") || "");
+  const hero = document.querySelector("[data-preview-hero]");
+  hero.hidden = !imageUrl;
+  document.querySelector("[data-preview-image]").src = imageUrl;
+  document.querySelector("[data-preview-image]").alt = imageAlt;
+  document.querySelector("[data-preview-image-caption]").textContent = imageAlt;
 }
 
-function wrapSelection(prefix, suffix = prefix, placeholder = "texto") {
-  const field = editorForm.elements.content;
-  if (field.disabled) return;
-  const start = field.selectionStart;
-  const end = field.selectionEnd;
-  const selected = field.value.slice(start, end) || placeholder;
-  field.setRangeText(`${prefix}${selected}${suffix}`, start, end, "select");
-  field.focus();
+function applyFormat(format) {
+  if (richEditor.contentEditable !== "true") return;
+  richEditor.focus();
+  if (format === "bold") document.execCommand("bold");
+  if (format === "italic") document.execCommand("italic");
+  if (format === "heading") document.execCommand("formatBlock", false, "h2");
+  if (format === "quote") document.execCommand("formatBlock", false, "blockquote");
+  if (format === "list") document.execCommand("insertUnorderedList");
+  if (format === "link") {
+    const url = window.prompt("Pegá la dirección del enlace (https://…)", "https://");
+    if (url) document.execCommand("createLink", false, url);
+  }
+  syncEditorSource();
   updateWordCount();
   if (!preview.hidden) refreshPreview();
 }
 
-function prefixLines(prefix) {
-  const field = editorForm.elements.content;
-  if (field.disabled) return;
-  const start = field.selectionStart;
-  const end = field.selectionEnd;
-  const selected = field.value.slice(start, end) || "texto";
-  field.setRangeText(selected.split("\n").map((line) => `${prefix}${line}`).join("\n"), start, end, "select");
-  field.focus();
-  if (!preview.hidden) refreshPreview();
-}
-
-function applyFormat(format) {
-  if (format === "bold") wrapSelection("**", "**", "texto en negrita");
-  if (format === "italic") wrapSelection("*", "*", "texto en cursiva");
-  if (format === "heading") prefixLines("## ");
-  if (format === "quote") prefixLines("> ");
-  if (format === "list") prefixLines("- ");
-  if (format === "link") {
-    const url = window.prompt("Pegá la dirección del enlace (https://…)", "https://");
-    if (url) wrapSelection("[", `](${url})`, "texto del enlace");
+async function uploadImage(file, retry = true) {
+  if (!accountIsEditor()) throw new Error("Solo la mesa editorial puede subir imágenes.");
+  if (!file.type.match(/^image\/(jpeg|png|webp|gif)$/)) throw new Error("Usá una imagen JPG, PNG, WebP o GIF.");
+  if (file.size > 8 * 1024 * 1024) throw new Error("La imagen supera el máximo de 8 MB.");
+  const extension = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const path = `${session.user.id}/${Date.now()}-${crypto.randomUUID()}.${extension}`;
+  const response = await fetch(`${config.url}/storage/v1/object/article-images/${path}`, {
+    method: "POST",
+    headers: {
+      apikey: config.publishableKey,
+      Authorization: `Bearer ${session.access_token}`,
+      "Content-Type": file.type,
+      "Cache-Control": "31536000"
+    },
+    body: file
+  });
+  if (response.status === 401 && retry) {
+    await refreshSession();
+    return uploadImage(file, false);
   }
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.message || payload.error || "No pudimos subir la imagen.");
+  }
+  return `${config.url}/storage/v1/object/public/article-images/${path.split("/").map(encodeURIComponent).join("/")}`;
 }
 
 async function teamRequest(body, retry = true) {
@@ -484,10 +527,49 @@ document.querySelector("[data-invite-form]").addEventListener("submit", async (e
   }
 });
 statusFilter.addEventListener("change", renderNotes);
-editorForm.elements.content.addEventListener("input", updateWordCount);
+richEditor.addEventListener("input", () => {
+  syncEditorSource();
+  updateWordCount();
+});
+richEditor.addEventListener("paste", (event) => {
+  event.preventDefault();
+  document.execCommand("insertText", false, event.clipboardData.getData("text/plain"));
+});
 editorForm.addEventListener("input", () => { if (!preview.hidden) refreshPreview(); });
-document.querySelectorAll("[data-format]").forEach((button) => button.addEventListener("click", () => applyFormat(button.dataset.format)));
+document.querySelectorAll("[data-format]").forEach((button) => {
+  button.addEventListener("mousedown", (event) => event.preventDefault());
+  button.addEventListener("click", () => applyFormat(button.dataset.format));
+});
+imageInput.addEventListener("change", async () => {
+  const file = imageInput.files?.[0];
+  if (!file) return;
+  imageInput.disabled = true;
+  imageUploadState.textContent = "Subiendo imagen…";
+  try {
+    const url = await uploadImage(file);
+    editorForm.elements.hero_image_url.value = url;
+    renderImagePreview(url, editorForm.elements.hero_image_alt.value);
+    imageUploadState.textContent = "Imagen lista. Se guardará junto con el artículo.";
+    if (!preview.hidden) refreshPreview();
+  } catch (error) {
+    imageUploadState.textContent = error.message;
+  } finally {
+    imageInput.disabled = false;
+    imageInput.value = "";
+  }
+});
+editorForm.elements.hero_image_alt.addEventListener("input", () => {
+  renderImagePreview(editorForm.elements.hero_image_url.value, editorForm.elements.hero_image_alt.value);
+});
+document.querySelector("[data-image-remove]").addEventListener("click", () => {
+  editorForm.elements.hero_image_url.value = "";
+  editorForm.elements.hero_image_alt.value = "";
+  renderImagePreview("", "");
+  imageUploadState.textContent = "Imagen quitada del artículo.";
+  if (!preview.hidden) refreshPreview();
+});
 document.querySelector("[data-preview-toggle]").addEventListener("click", (event) => {
+  syncEditorSource();
   preview.hidden = !preview.hidden;
   event.currentTarget.textContent = preview.hidden ? "Ver vista previa" : "Cerrar vista previa";
   if (!preview.hidden) refreshPreview();
