@@ -285,6 +285,7 @@ async function saveEditorialNote(status = activeNote?.status) {
   if (!activeNote || !accountIsEditor()) return;
   const payload = editorialPayload(status);
   if (!payload.title || !payload.content) throw new Error("La nota necesita título y texto.");
+  if (status === "published" && payload.hero_image_url && !payload.hero_image_alt) throw new Error("Agregá una descripción para la imagen antes de publicar.");
   if (status === "rejected" && !payload.editorial_notes) throw new Error("Escribí una observación antes de devolverla.");
   setEditorMessage(status === "published" ? "Publicando…" : status === "rejected" ? "Devolviendo…" : "Guardando correcciones…");
   const message = status === "published" ? "Marcada como publicada." : status === "rejected" ? "Devuelta al autor con observaciones." : status === "submitted" ? "Devuelta a la cola de edición." : "Correcciones guardadas.";
