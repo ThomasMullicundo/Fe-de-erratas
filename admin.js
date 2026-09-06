@@ -177,12 +177,14 @@ function openNote(note) {
   editorForm.elements.excerpt.value = note.excerpt || "";
   editorForm.elements.category.value = note.category || "relato";
   editorForm.elements.byline.value = note.byline || "";
+  editorForm.elements.destination_archive.checked = note.destination === "archive";
   editorForm.elements.content.value = note.content || "";
   editorForm.elements.slug.value = note.slug || "";
   editorForm.elements.editorial_notes.value = note.editorial_notes || "";
   setFormDisabled(!isEditor && !authorCanEdit);
   editorForm.elements.slug.disabled = !isEditor;
   editorForm.elements.editorial_notes.disabled = !isEditor;
+  editorForm.elements.destination_archive.disabled = !isEditor;
   lockedMessage.hidden = isEditor || authorCanEdit;
   document.querySelector("[data-note-status]").textContent = formatStatus(note.status);
   document.querySelector("[data-note-author]").textContent = note.author_email || `Autor ${note.author_id.slice(0, 8)}`;
@@ -197,7 +199,7 @@ function openNote(note) {
   renderNotes();
 }
 
-const noteSelection = "id,author_id,author_email,title,excerpt,content,category,byline,status,slug,editorial_notes,created_at,updated_at,submitted_at,published_at,reviewed_at";
+const noteSelection = "id,author_id,author_email,title,excerpt,content,category,byline,destination,status,slug,editorial_notes,created_at,updated_at,submitted_at,published_at,reviewed_at";
 
 async function loadNotes() {
   notes = await api(`notes?select=${noteSelection}&order=updated_at.desc`);
@@ -235,6 +237,7 @@ function editorialPayload(status = activeNote.status) {
     excerpt: String(data.get("excerpt") || "").trim(),
     category: String(data.get("category") || "relato"),
     byline: String(data.get("byline") || "").trim(),
+    destination: data.get("destination_archive") === "on" ? "archive" : "section",
     content: String(data.get("content") || "").trim(),
     editorial_notes: String(data.get("editorial_notes") || "").trim(),
     slug: slugify(String(data.get("slug") || "").trim() || title),
@@ -283,7 +286,8 @@ function refreshPreview() {
   const data = new FormData(editorForm);
   const content = String(data.get("content") || "");
   const words = content.trim() ? content.trim().split(/\s+/).length : 0;
-  document.querySelector("[data-preview-category]").textContent = String(data.get("category") || "Artículo");
+  const category = String(data.get("category") || "Artículo");
+  document.querySelector("[data-preview-category]").textContent = data.get("destination_archive") === "on" ? `Archivo · ${category}` : category;
   document.querySelector("[data-preview-title]").textContent = String(data.get("title") || "Artículo sin título");
   document.querySelector("[data-preview-excerpt]").textContent = String(data.get("excerpt") || "");
   document.querySelector("[data-preview-byline]").textContent = `Por ${String(data.get("byline") || "Redacción Fe de ratas")}`;
