@@ -159,6 +159,10 @@ nav a[aria-current="page"] { background:var(--blue); color:white; }
 .editor-tools { display:grid; grid-template-columns:minmax(220px,.55fr) 1fr; gap:18px; margin-top:22px; padding:20px; border:3px solid var(--ink); background:var(--paper-light); }
 .editor-tools label { margin-top:0; }
 .editor-tools textarea { resize:vertical; }
+.archive-destination { display:flex !important; gap:11px; align-items:flex-start; margin-top:22px !important; padding:13px; border:2px solid var(--red); background:var(--paper); cursor:pointer; }
+.archive-destination input { width:18px !important; height:18px; margin:1px 0 0; accent-color:var(--red); }
+.archive-destination span { display:grid; gap:5px; font:700 .7rem/1.35 Arial,sans-serif; text-transform:none; letter-spacing:0; }
+.archive-destination strong { color:var(--red); font:900 .72rem/1 Arial,sans-serif; text-transform:uppercase; letter-spacing:.08em; }
 .editor-actions-group { display:flex; flex-wrap:wrap; gap:10px; }
 .return-note { background:var(--red); }
 .review-note { background:var(--paper-light); color:var(--ink); }
