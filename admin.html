@@ -104,7 +104,26 @@
               <button type="button" data-format="link" title="Hipervínculo">Enlace</button>
               <span>Markdown seguro</span>
             </div>
-            <textarea id="note-content" name="content" placeholder="Escribí acá. El borrador queda guardado en tu cuenta." required></textarea>
+            <textarea id="note-content" name="content" class="editor-source" aria-hidden="true" tabindex="-1"></textarea>
+            <div id="note-rich-editor" class="rich-editor" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Escribí acá. El formato se ve mientras trabajás."></div>
+
+            <section class="image-editor" data-editor-only hidden>
+              <div>
+                <label for="note-image">Imagen principal</label>
+                <input id="note-image" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
+                <small>JPG, PNG, WebP o GIF · máximo 8 MB</small>
+              </div>
+              <div>
+                <label for="note-image-alt">Descripción de la imagen</label>
+                <input id="note-image-alt" name="hero_image_alt" maxlength="240" placeholder="Qué muestra la imagen, para lectores de pantalla">
+              </div>
+              <div class="image-editor-preview" data-image-preview-wrap hidden>
+                <img data-image-preview alt="">
+                <button class="admin-button review-note" type="button" data-image-remove>Quitar imagen</button>
+              </div>
+              <input name="hero_image_url" type="hidden">
+              <p class="image-upload-state" data-image-upload-state aria-live="polite"></p>
+            </section>
 
             <div class="preview-actions">
               <button class="admin-button review-note" type="button" data-preview-toggle>Ver vista previa</button>
@@ -116,6 +135,7 @@
                 <h1 data-preview-title></h1>
                 <p class="published-dek" data-preview-excerpt></p>
                 <div class="published-meta"><span data-preview-byline></span><span data-preview-reading></span></div>
+                <figure class="published-hero" data-preview-hero hidden><img data-preview-image alt=""><figcaption data-preview-image-caption></figcaption></figure>
                 <div class="published-body" data-preview-content></div>
               </div>
             </section>
