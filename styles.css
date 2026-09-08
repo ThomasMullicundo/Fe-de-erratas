@@ -153,6 +153,14 @@ nav a[aria-current="page"] { background:var(--blue); color:white; }
 .submit-note { background:var(--blue); }
 .editor-state { margin-left:auto; font:800 .72rem/1.3 Arial,sans-serif; text-transform:uppercase; }
 .locked-note { border:3px solid var(--red); background:var(--paper-light); padding:18px; margin-bottom:22px; font:800 .8rem/1.4 Arial,sans-serif; text-transform:uppercase; }
+.local-recovery { display:flex; align-items:center; gap:10px; margin-bottom:22px; padding:14px; border:3px solid var(--blue); background:var(--paper-light); }
+.local-recovery>div { display:grid; gap:4px; margin-right:auto; }
+.local-recovery strong { color:var(--blue); font:900 .76rem/1 Arial,sans-serif; text-transform:uppercase; }
+.local-recovery span { font-size:.9rem; }
+.local-recovery .admin-button { padding:10px 12px; }
+.trash-notice { display:flex; justify-content:space-between; gap:20px; margin-bottom:22px; padding:17px; border:3px solid var(--red); background:var(--red); color:#fff; font:800 .76rem/1.3 Arial,sans-serif; text-transform:uppercase; }
+.trash-note { margin-left:auto; background:transparent; color:var(--ink); }
+.restore-note { margin-left:auto; background:var(--blue); }
 .role-chip { display:block; width:max-content; margin-top:8px; padding:5px 8px; background:var(--blue); color:white; font:900 .64rem/1 Arial,sans-serif; text-transform:uppercase; letter-spacing:.1em; }
 .queue-filter { display:block; margin:-6px 0 20px; font:900 .67rem/1 Arial,sans-serif; text-transform:uppercase; letter-spacing:.1em; }
 .queue-filter select { width:100%; margin-top:8px; padding:10px; border:2px solid var(--ink); border-radius:0; background:var(--paper); color:var(--ink); font:800 .75rem/1 Arial,sans-serif; text-transform:uppercase; }
@@ -281,5 +289,6 @@ nav a[aria-current="page"] { background:var(--blue); color:white; }
   .published-index .article-row>p { grid-column:2/4; }
   .published-body blockquote { margin:2em 0; padding-inline:20px; }
   .published-footer,.preview-actions { align-items:flex-start; flex-direction:column; }
+  .local-recovery,.trash-notice { align-items:stretch; flex-direction:column; }
 }
 @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } .crawl div { animation:none; } }
