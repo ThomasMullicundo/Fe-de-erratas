@@ -38,7 +38,7 @@
             <button class="admin-button new-note" type="button" data-new-note aria-label="Crear una nota">+</button>
           </div>
           <p class="author-chip"><span data-account-email></span><b class="role-chip" data-account-role></b></p>
-          <label class="queue-filter" data-editor-only hidden>
+          <label class="queue-filter">
             Ver estado
             <select data-status-filter>
               <option value="all">Todas</option>
@@ -46,6 +46,7 @@
               <option value="submitted">En edición</option>
               <option value="rejected">Devueltas</option>
               <option value="published">Publicadas</option>
+              <option value="trash">Papelera</option>
             </select>
           </label>
           <button class="admin-button team-button" type="button" data-team-open data-owner-only hidden>Gestionar equipo</button>
@@ -66,8 +67,14 @@
               <span data-note-status>Borrador</span>
               <span data-word-count>0 palabras</span>
             </div>
+            <div class="local-recovery" data-local-recovery hidden>
+              <div><strong>Encontramos cambios sin guardar</strong><span>Hay una copia local más reciente que la versión de la base.</span></div>
+              <button class="admin-button" type="button" data-local-restore>Recuperar</button>
+              <button class="admin-button review-note" type="button" data-local-discard>Descartar copia</button>
+            </div>
             <p class="author-line" data-editor-only hidden>Enviado por <strong data-note-author></strong></p>
             <div class="locked-note" data-locked-message hidden>Esta nota ya fue enviada a edición y quedó cerrada para cambios.</div>
+            <div class="trash-notice" data-trash-message hidden><strong>Esta nota está en la papelera.</strong><span data-trash-countdown></span></div>
             <div class="editor-feedback" data-author-feedback hidden>
               <strong>Observaciones de la mesa</strong>
               <p data-author-feedback-text></p>
@@ -166,6 +173,8 @@
                 <button class="admin-button review-note" type="button" data-review-note>Pasar a edición</button>
                 <button class="admin-button submit-note" type="button" data-publish-note>Publicar</button>
               </div>
+              <button class="admin-button trash-note" type="button" data-trash-note>Mover a papelera</button>
+              <button class="admin-button restore-note" type="button" data-restore-note hidden>Restaurar</button>
               <span class="editor-state" data-editor-state aria-live="polite"></span>
             </div>
           </form>
