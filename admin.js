@@ -21,6 +21,11 @@ const imageUploadState = document.querySelector("[data-image-upload-state]");
 let session = readSession();
 let notes = [];
 let activeNote = null;
+let autosaveTimer = null;
+let autosaveRunning = false;
+let workDirty = false;
+let editRevision = 0;
+const backupPrefix = "fe-de-ratas-note-backup:";
 
 function readSession() {
   try { return JSON.parse(localStorage.getItem(sessionKey)); } catch { return null; }
@@ -99,6 +104,72 @@ function setEditorMessage(message) {
   editorState.textContent = message;
 }
 
+function backupKey(noteId) {
+  return `${backupPrefix}${noteId}`;
+}
+
+function readBackup(noteId) {
+  try { return JSON.parse(localStorage.getItem(backupKey(noteId))); } catch { return null; }
+}
+
+function clearBackup(noteId) {
+  if (noteId) localStorage.removeItem(backupKey(noteId));
+}
+
+function captureEditorData() {
+  syncEditorSource();
+  const data = new FormData(editorForm);
+  return {
+    title: String(data.get("title") || ""),
+    excerpt: String(data.get("excerpt") || ""),
+    category: String(data.get("category") || "relato"),
+    byline: String(data.get("byline") || ""),
+    content: String(data.get("content") || ""),
+    slug: String(data.get("slug") || ""),
+    editorial_notes: String(data.get("editorial_notes") || ""),
+    destination: data.get("destination_archive") === "on" ? "archive" : "section",
+    hero_image_url: String(data.get("hero_image_url") || ""),
+    hero_image_alt: String(data.get("hero_image_alt") || "")
+  };
+}
+
+function saveLocalBackup() {
+  if (!activeNote || activeNote.deleted_at) return;
+  try {
+    localStorage.setItem(backupKey(activeNote.id), JSON.stringify({ savedAt: new Date().toISOString(), data: captureEditorData() }));
+    setEditorMessage("Copia local guardada");
+  } catch {
+    setEditorMessage("No pudimos crear la copia local. Guardá el borrador ahora.");
+  }
+}
+
+function applyBackup(backup) {
+  const data = backup?.data;
+  if (!data) return;
+  ["title", "excerpt", "category", "byline"].forEach((name) => {
+    if (data[name] != null) editorForm.elements[name].value = data[name];
+  });
+  editorForm.elements.content.value = data.content || "";
+  richEditor.innerHTML = window.FE_DE_RATAS_RENDER_MARKDOWN(data.content || "");
+  if (accountIsEditor()) {
+    editorForm.elements.slug.value = data.slug || "";
+    editorForm.elements.editorial_notes.value = data.editorial_notes || "";
+    editorForm.elements.destination_archive.checked = data.destination === "archive";
+    editorForm.elements.hero_image_url.value = data.hero_image_url || "";
+    editorForm.elements.hero_image_alt.value = data.hero_image_alt || "";
+    renderImagePreview(data.hero_image_url || "", data.hero_image_alt || "");
+  }
+  updateWordCount();
+  refreshPreview();
+  document.querySelector("[data-local-recovery]").hidden = true;
+  setEditorMessage("Copia recuperada. Guardala para enviarla a la base.");
+}
+
+function showBackupRecovery(note) {
+  const backup = readBackup(note.id);
+  document.querySelector("[data-local-recovery]").hidden = Boolean(note.deleted_at) || !backup?.data;
+}
+
 function setRoleVisibility() {
   const isEditor = accountIsEditor();
   const isOwner = accountIsOwner();
@@ -126,8 +197,10 @@ function setLoggedIn(loggedIn) {
 }
 
 function filteredNotes() {
-  if (!accountIsEditor() || statusFilter.value === "all") return notes;
-  return notes.filter((note) => note.status === statusFilter.value);
+  if (statusFilter.value === "trash") return notes.filter((note) => note.deleted_at);
+  const activeNotes = notes.filter((note) => !note.deleted_at);
+  if (statusFilter.value === "all") return activeNotes;
+  return activeNotes.filter((note) => note.status === statusFilter.value);
 }
 
 function renderNotes() {
@@ -149,7 +222,7 @@ function renderNotes() {
     const meta = document.createElement("span");
     const status = document.createElement("b");
     status.className = "status-pill";
-    status.textContent = formatStatus(note.status);
+    status.textContent = note.deleted_at ? "Papelera" : formatStatus(note.status);
     const date = document.createElement("time");
     date.dateTime = note.updated_at;
     date.textContent = formatDate(note.updated_at);
@@ -172,10 +245,25 @@ function setFormDisabled(disabled) {
   richEditor.classList.toggle("is-disabled", disabled);
 }
 
+function canTrashNote(note) {
+  if (!note || note.deleted_at) return false;
+  if (accountIsEditor()) return note.status !== "draft" || note.author_id === session.user.id;
+  return note.author_id === session.user.id && ["draft", "rejected"].includes(note.status);
+}
+
+function trashDaysRemaining(deletedAt) {
+  const expiresAt = new Date(deletedAt).getTime() + 10 * 24 * 60 * 60 * 1000;
+  return Math.max(0, Math.ceil((expiresAt - Date.now()) / (24 * 60 * 60 * 1000)));
+}
+
 function openNote(note) {
+  clearTimeout(autosaveTimer);
+  workDirty = false;
+  editRevision = 0;
   activeNote = note;
   const isEditor = accountIsEditor();
-  const authorCanEdit = note.status === "draft" || note.status === "rejected";
+  const isDeleted = Boolean(note.deleted_at);
+  const authorCanEdit = !isDeleted && (note.status === "draft" || note.status === "rejected");
   editorEmpty.hidden = true;
   editorForm.hidden = false;
   editorForm.elements.title.value = note.title || "";
@@ -189,28 +277,36 @@ function openNote(note) {
   editorForm.elements.hero_image_alt.value = note.hero_image_alt || "";
   editorForm.elements.slug.value = note.slug || "";
   editorForm.elements.editorial_notes.value = note.editorial_notes || "";
-  setFormDisabled(!isEditor && !authorCanEdit);
-  editorForm.elements.slug.disabled = !isEditor;
-  editorForm.elements.editorial_notes.disabled = !isEditor;
-  editorForm.elements.destination_archive.disabled = !isEditor;
-  editorForm.elements.hero_image_alt.disabled = !isEditor;
-  imageInput.disabled = !isEditor;
+  setFormDisabled(isDeleted || (!isEditor && !authorCanEdit));
+  editorForm.elements.slug.disabled = !isEditor || isDeleted;
+  editorForm.elements.editorial_notes.disabled = !isEditor || isDeleted;
+  editorForm.elements.destination_archive.disabled = !isEditor || isDeleted;
+  editorForm.elements.hero_image_alt.disabled = !isEditor || isDeleted;
+  imageInput.disabled = !isEditor || isDeleted;
   renderImagePreview(note.hero_image_url || "", note.hero_image_alt || "");
-  lockedMessage.hidden = isEditor || authorCanEdit;
+  lockedMessage.hidden = isDeleted || isEditor || authorCanEdit;
+  const trashMessage = document.querySelector("[data-trash-message]");
+  trashMessage.hidden = !isDeleted;
+  document.querySelector("[data-trash-countdown]").textContent = isDeleted
+    ? `Se eliminará automáticamente en ${trashDaysRemaining(note.deleted_at)} días.`
+    : "";
   document.querySelector("[data-note-status]").textContent = formatStatus(note.status);
   document.querySelector("[data-note-author]").textContent = note.author_email || `Autor ${note.author_id.slice(0, 8)}`;
   const feedback = document.querySelector("[data-author-feedback]");
   feedback.hidden = isEditor || !note.editorial_notes;
   document.querySelector("[data-author-feedback-text]").textContent = note.editorial_notes || "";
-  document.querySelector("[data-author-actions]").hidden = isEditor || !authorCanEdit;
-  document.querySelector("[data-editor-actions]").hidden = !isEditor;
+  document.querySelector("[data-author-actions]").hidden = isDeleted || isEditor || !authorCanEdit;
+  document.querySelector("[data-editor-actions]").hidden = isDeleted || !isEditor;
   document.querySelector("[data-review-note]").hidden = !isEditor || note.status === "submitted";
-  setEditorMessage(isEditor ? "Edición abierta" : authorCanEdit ? "Borrador abierto" : "Solo lectura");
+  document.querySelector("[data-trash-note]").hidden = !canTrashNote(note);
+  document.querySelector("[data-restore-note]").hidden = !isDeleted;
+  setEditorMessage(isDeleted ? "En papelera" : isEditor ? "Edición abierta" : authorCanEdit ? "Borrador abierto" : "Solo lectura");
   updateWordCount();
+  showBackupRecovery(note);
   renderNotes();
 }
 
-const noteSelection = "id,author_id,author_email,title,excerpt,content,category,byline,destination,hero_image_url,hero_image_alt,status,slug,editorial_notes,created_at,updated_at,submitted_at,published_at,reviewed_at";
+const noteSelection = "id,author_id,author_email,title,excerpt,content,category,byline,destination,hero_image_url,hero_image_alt,deleted_at,status,slug,editorial_notes,created_at,updated_at,submitted_at,published_at,reviewed_at";
 
 async function loadNotes() {
   notes = await api(`notes?select=${noteSelection}&order=updated_at.desc`);
@@ -261,6 +357,7 @@ function editorialPayload(status = activeNote.status) {
 }
 
 async function updateActiveNote(payload, message) {
+  clearTimeout(autosaveTimer);
   const updated = await api(`notes?id=eq.${encodeURIComponent(activeNote.id)}&select=${noteSelection}`, {
     method: "PATCH",
     headers: { Prefer: "return=representation" },
@@ -268,9 +365,55 @@ async function updateActiveNote(payload, message) {
   });
   if (!updated?.length) throw new Error("La nota cambió o ya no tenés permiso para editarla.");
   activeNote = updated[0];
+  workDirty = false;
+  clearBackup(activeNote.id);
+  document.querySelector("[data-local-recovery]").hidden = true;
   notes = notes.map((note) => note.id === activeNote.id ? activeNote : note).sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
   openNote(activeNote);
   setEditorMessage(message);
+}
+
+async function autosaveDraft() {
+  if (autosaveRunning || !activeNote || activeNote.deleted_at || activeNote.status !== "draft") return;
+  autosaveRunning = true;
+  const noteId = activeNote.id;
+  const savedRevision = editRevision;
+  try {
+    const payload = accountIsEditor() ? editorialPayload("draft") : authorPayload("draft");
+    const updated = await api(`notes?id=eq.${encodeURIComponent(noteId)}&select=${noteSelection}`, {
+      method: "PATCH",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify(payload)
+    });
+    if (!updated?.length) throw new Error("No hubo confirmación del guardado.");
+    notes = notes.map((note) => note.id === noteId ? updated[0] : note);
+    if (activeNote?.id === noteId) activeNote = updated[0];
+    const fullySaved = editRevision === savedRevision;
+    if (fullySaved) {
+      workDirty = false;
+      clearBackup(noteId);
+    }
+    renderNotes();
+    setEditorMessage(fullySaved ? "Borrador guardado automáticamente" : "Hay cambios nuevos protegidos localmente");
+  } catch {
+    setEditorMessage("Sin conexión: la copia local sigue protegida");
+  } finally {
+    autosaveRunning = false;
+    if (workDirty && activeNote?.id === noteId && activeNote.status === "draft") {
+      clearTimeout(autosaveTimer);
+      autosaveTimer = setTimeout(autosaveDraft, 1800);
+    }
+  }
+}
+
+function protectCurrentWork() {
+  workDirty = true;
+  editRevision += 1;
+  saveLocalBackup();
+  clearTimeout(autosaveTimer);
+  if (activeNote?.status === "draft" && !activeNote.deleted_at) {
+    autosaveTimer = setTimeout(autosaveDraft, 1800);
+  }
 }
 
 async function saveAuthorNote(status = "draft") {
@@ -290,6 +433,19 @@ async function saveEditorialNote(status = activeNote?.status) {
   setEditorMessage(status === "published" ? "Publicando…" : status === "rejected" ? "Devolviendo…" : "Guardando correcciones…");
   const message = status === "published" ? "Marcada como publicada." : status === "rejected" ? "Devuelta al autor con observaciones." : status === "submitted" ? "Devuelta a la cola de edición." : "Correcciones guardadas.";
   await updateActiveNote(payload, message);
+}
+
+async function moveActiveNoteToTrash() {
+  if (!canTrashNote(activeNote)) return;
+  const payload = accountIsEditor()
+    ? { ...editorialPayload(activeNote.status), deleted_at: new Date().toISOString() }
+    : { ...authorPayload("draft"), deleted_at: new Date().toISOString() };
+  await updateActiveNote(payload, "Movida a la papelera. Podés restaurarla durante 10 días.");
+}
+
+async function restoreActiveNote() {
+  if (!activeNote?.deleted_at) return;
+  await updateActiveNote({ deleted_at: null }, "Nota restaurada.");
 }
 
 function updateWordCount() {
@@ -344,6 +500,7 @@ function applyFormat(format) {
   }
   syncEditorSource();
   updateWordCount();
+  protectCurrentWork();
   if (!preview.hidden) refreshPreview();
 }
 
@@ -485,6 +642,7 @@ loginForm.addEventListener("submit", async (event) => {
 
 document.querySelectorAll("[data-new-note]").forEach((button) => button.addEventListener("click", () => createNote().catch((error) => setEditorMessage(error.message))));
 document.querySelector("[data-logout]").addEventListener("click", async () => {
+  if (workDirty) saveLocalBackup();
   try { await authRequest("logout", null, session?.access_token); } catch { /* The local session is still cleared. */ }
   writeSession(null);
   notes = [];
@@ -536,7 +694,10 @@ richEditor.addEventListener("paste", (event) => {
   event.preventDefault();
   document.execCommand("insertText", false, event.clipboardData.getData("text/plain"));
 });
-editorForm.addEventListener("input", () => { if (!preview.hidden) refreshPreview(); });
+editorForm.addEventListener("input", () => {
+  protectCurrentWork();
+  if (!preview.hidden) refreshPreview();
+});
 document.querySelectorAll("[data-format]").forEach((button) => {
   button.addEventListener("mousedown", (event) => event.preventDefault());
   button.addEventListener("click", () => applyFormat(button.dataset.format));
@@ -551,6 +712,7 @@ imageInput.addEventListener("change", async () => {
     editorForm.elements.hero_image_url.value = url;
     renderImagePreview(url, editorForm.elements.hero_image_alt.value);
     imageUploadState.textContent = "Imagen lista. Se guardará junto con el artículo.";
+    protectCurrentWork();
     if (!preview.hidden) refreshPreview();
   } catch (error) {
     imageUploadState.textContent = error.message;
@@ -567,6 +729,7 @@ document.querySelector("[data-image-remove]").addEventListener("click", () => {
   editorForm.elements.hero_image_alt.value = "";
   renderImagePreview("", "");
   imageUploadState.textContent = "Imagen quitada del artículo.";
+  protectCurrentWork();
   if (!preview.hidden) refreshPreview();
 });
 document.querySelector("[data-preview-toggle]").addEventListener("click", (event) => {
@@ -575,6 +738,24 @@ document.querySelector("[data-preview-toggle]").addEventListener("click", (event
   event.currentTarget.textContent = preview.hidden ? "Ver vista previa" : "Cerrar vista previa";
   if (!preview.hidden) refreshPreview();
 });
+document.querySelector("[data-trash-note]").addEventListener("click", () => {
+  if (window.confirm("¿Mover esta nota a la papelera? Se ocultará del sitio y se eliminará definitivamente dentro de 10 días.")) {
+    moveActiveNoteToTrash().catch((error) => setEditorMessage(error.message));
+  }
+});
+document.querySelector("[data-restore-note]").addEventListener("click", () => {
+  restoreActiveNote().catch((error) => setEditorMessage(error.message));
+});
+document.querySelector("[data-local-restore]").addEventListener("click", () => {
+  applyBackup(readBackup(activeNote?.id));
+  protectCurrentWork();
+});
+document.querySelector("[data-local-discard]").addEventListener("click", () => {
+  clearBackup(activeNote?.id);
+  document.querySelector("[data-local-recovery]").hidden = true;
+  setEditorMessage("Copia local descartada");
+});
+window.addEventListener("beforeunload", () => { if (workDirty) saveLocalBackup(); });
 editorForm.elements.title.addEventListener("blur", () => {
   if (accountIsEditor() && !editorForm.elements.slug.value) editorForm.elements.slug.value = slugify(editorForm.elements.title.value);
 });
