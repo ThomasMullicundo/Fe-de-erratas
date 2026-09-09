@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+  <title>Fe de ratas</title>
+  <g fill="#fff">
+    <path d="M10 2h2v1h-2zM9 3h4v2H9z"/>
+    <path d="M5 4h5v1H5zM4 5h10v1H4zM3 6h10v1H3zM14 6h2v1h-2zM3 7h12v1H3zM4 8h10v1H4zM5 9h8v1H5z"/>
+    <path d="M6 10h2v2H5v-1h1zM10 9h2v3h2v1h-4z"/>
+    <path d="M4 7H2v1H1v1H0v3h1v1h2v1h7v-1H4v-1H2v-1H1v-1h1V9h2z"/>
+  </g>
+</svg>
